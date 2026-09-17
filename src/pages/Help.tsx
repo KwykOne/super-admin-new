@@ -8,7 +8,8 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { useToast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   Search, 
   HelpCircle, 
@@ -103,13 +104,11 @@ export default function Help() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("faq");
-  const { toast } = useToast();
 
   useEffect(() => {
-    // Simulate loading data
     const timer = setTimeout(() => {
       setLoading(false);
-    }, 1000);
+    }, 300);
 
     return () => clearTimeout(timer);
   }, []);
@@ -126,8 +125,7 @@ export default function Help() {
 
   const handleContactSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    toast({
-      title: "Support request sent",
+    toast.success("Support request sent", {
       description: "We've received your message and will get back to you shortly.",
     });
   };
@@ -309,15 +307,17 @@ export default function Help() {
                     <label htmlFor="priority" className="text-sm font-medium">
                       Priority
                     </label>
-                    <select
-                      id="priority"
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      <option value="low">Low - General question</option>
-                      <option value="medium">Medium - Need help soon</option>
-                      <option value="high">High - Facing issues</option>
-                      <option value="critical">Critical - System down</option>
-                    </select>
+                    <Select defaultValue="low">
+                      <SelectTrigger id="priority">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="low">Low - General question</SelectItem>
+                        <SelectItem value="medium">Medium - Need help soon</SelectItem>
+                        <SelectItem value="high">High - Facing issues</SelectItem>
+                        <SelectItem value="critical">Critical - System down</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                   
                   <Button type="submit" className="w-full">

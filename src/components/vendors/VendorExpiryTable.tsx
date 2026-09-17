@@ -11,7 +11,7 @@ import { formatDateTime } from "@/lib/formatters";
 import axios from "axios";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 interface VendorExpiryTableProps {
   className?: string;
@@ -82,7 +82,7 @@ export function VendorExpiryTable({ className }: VendorExpiryTableProps) {
     expiring_this_month: 0,
     total_plans: 0,
   });
-  const { toast } = useToast();
+
 
   // Filter states
   const [filters, setFilters] = useState({
@@ -182,10 +182,8 @@ export function VendorExpiryTable({ className }: VendorExpiryTableProps) {
       
       if (to < from) {
         setDateError("End date cannot be earlier than start date");
-        toast({
-          title: "Invalid Date Range",
+        toast.error("Invalid Date Range", {
           description: "End date cannot be earlier than start date",
-          variant: "destructive",
         });
         return false;
       } else {

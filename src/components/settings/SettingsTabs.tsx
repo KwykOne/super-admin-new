@@ -7,9 +7,10 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { useToast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 import { IntegrationsTab } from "./IntegrationsTab";
 import { CreditCard } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface SettingsTabsProps {
   value: string;
@@ -17,8 +18,6 @@ interface SettingsTabsProps {
 }
 
 export function SettingsTabs({ value, onValueChange }: SettingsTabsProps) {
-  const { toast } = useToast();
-  
   // Form states
   const [companyName, setCompanyName] = useState("BharatGo Technologies Pvt Ltd");
   const [emailNotifications, setEmailNotifications] = useState(true);
@@ -30,15 +29,13 @@ export function SettingsTabs({ value, onValueChange }: SettingsTabsProps) {
   const [apiEnabled, setApiEnabled] = useState(true);
   
   const handleSaveChanges = () => {
-    toast({
-      title: "Settings updated",
+    toast.success("Settings updated", {
       description: "Your settings have been saved successfully.",
     });
   };
 
   const handleResetPassword = () => {
-    toast({
-      title: "Password reset email sent",
+    toast.success("Password reset email sent", {
       description: "Check your email for instructions to reset your password.",
     });
   };
@@ -53,8 +50,7 @@ export function SettingsTabs({ value, onValueChange }: SettingsTabsProps) {
     setLogoutTime("30");
     setApiEnabled(true);
     
-    toast({
-      title: "Settings reset",
+    toast.success("Settings reset", {
       description: "All settings have been reset to default values.",
     });
   };
@@ -94,28 +90,32 @@ export function SettingsTabs({ value, onValueChange }: SettingsTabsProps) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="timezone">Timezone</Label>
-                <select
-                  id="timezone"
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <option value="Asia/Kolkata">Asia/Kolkata (IST)</option>
-                  <option value="UTC">UTC</option>
-                  <option value="America/New_York">America/New_York (EST)</option>
-                  <option value="Europe/London">Europe/London (GMT)</option>
-                </select>
+                <Select defaultValue="Asia/Kolkata">
+                  <SelectTrigger id="timezone">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Asia/Kolkata">Asia/Kolkata (IST)</SelectItem>
+                    <SelectItem value="UTC">UTC</SelectItem>
+                    <SelectItem value="America/New_York">America/New_York (EST)</SelectItem>
+                    <SelectItem value="Europe/London">Europe/London (GMT)</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               
               <div className="space-y-2">
                 <Label htmlFor="language">Language</Label>
-                <select
-                  id="language"
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <option value="en">English</option>
-                  <option value="hi">Hindi</option>
-                  <option value="ta">Tamil</option>
-                  <option value="te">Telugu</option>
-                </select>
+                <Select defaultValue="en">
+                  <SelectTrigger id="language">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="en">English</SelectItem>
+                    <SelectItem value="hi">Hindi</SelectItem>
+                    <SelectItem value="ta">Tamil</SelectItem>
+                    <SelectItem value="te">Telugu</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </CardContent>

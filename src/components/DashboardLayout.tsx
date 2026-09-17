@@ -4,7 +4,7 @@ import { Sidebar } from "./Sidebar";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
-import { useToast } from "@/components/ui/use-toast";
+
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ArrowLeft, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -28,7 +28,6 @@ interface DashboardLayoutProps {
 export function DashboardLayout({ children, title, subtitle, action, backLink, wip }: DashboardLayoutProps) {
   useScrollToTop(); // Add the hook here
 
-  const { toast } = useToast();
   const isMobile = useIsMobile();
   const dispatch = useDispatch()
 
@@ -38,17 +37,11 @@ export function DashboardLayout({ children, title, subtitle, action, backLink, w
 
   // useEffect(() => {
   //   if (storeType !== "all") {
-  //     toast({
-  //       title: `Showing ${storeType} stores`,
-  //       description: `Dashboard data now displays ${storeType === "actual" ? "only actual" : "only test"} stores.`,
-  //     });
+  //     toast(`Showing ${storeType} stores`);
   //   } else {
-  //     toast({
-  //       title: "Showing all stores",
-  //       description: "Dashboard data now displays both actual and test stores.",
-  //     });
+  //     toast("Showing all stores");
   //   }
-  // }, [storeType, toast]);
+  // }, [storeType]);
 
   const isCollapsed: any = useSelector((state:RootState) => state.modal.isSidebarCollapsed);
 
@@ -58,7 +51,7 @@ export function DashboardLayout({ children, title, subtitle, action, backLink, w
       <Sidebar />
       <div className={`flex-1 flex flex-col transition-all duration-300 dark:bg-black ${ isMobile ? "ml-0" :  isCollapsed ? " ml-16" : " ml-64"}`}>
         <header className="bg-white dark:bg-black border-b border-gray-200/30 px-4 sm:px-6 py-4 flex items-center md:justify-center">
-          <div className="md:w-[80vw] dark:bg-black flex flex-col sm:flex-row sm:items-center sm:justify-between">
+          <div className="md:w-[80vw] dark:bg-black flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between w-full">
             <div className="flex items-center justify-between">
 
               <div>
@@ -74,24 +67,24 @@ export function DashboardLayout({ children, title, subtitle, action, backLink, w
               </div>
             </div>
             
-            <div className="mt-4 sm:mt-0 flex items-center space-x-4">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-4">
 
-              <div className="flex items-center gap-0.5">
-                <h1 className={` ${mode === 'dev' ? ' text-black ' : ' text-gray-500/50 '}  mt-1 text-xs md:text-sm`}>Test Mode</h1>
+              <div className="flex items-center gap-1">
+                <h1 className={` ${mode === 'dev' ? ' text-black ' : ' text-gray-500/50 '} text-xs md:text-sm`}>Test Mode</h1>
                 <Switch  defaultValue={mode} checked={mode === 'production'} onCheckedChange={()=>mode === 'dev'? dispatch(setProdMode()): dispatch(setDevMode()) }/>
-                <h1 className={`${mode === 'production' ? ' text-black ' : ' text-gray-500/50 '} mt-1 text-xs md:text-sm`}>Production Mode</h1>
+                <h1 className={`${mode === 'production' ? ' text-black ' : ' text-gray-500/50 '} text-xs md:text-sm`}>Production Mode</h1>
                
               </div>
 
               <StoreTypeTabs value={storeType} onValueChange={changeDataType} />
-              <Badge variant="outline" className="ml-auto">
+              <Badge variant="outline">
                 Super Admin
               </Badge>
             </div>
           </div>
         </header>
         
-        <main className="flex-1 overflow-y-auto overflow-x-auto p-4 sm:p-6">
+        <main className="flex-1 overflow-y-auto overflow-x-auto p-4 sm:p-6 pb-20 md:pb-6">
           <div className="max-w-7xl mx-auto">
             {children}
           </div>

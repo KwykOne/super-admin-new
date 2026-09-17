@@ -155,33 +155,7 @@ const dataByPeriod = {
   }
 };
 
-const monthlyGrowthData = [
-  { month: "Jan", sellers: 120, orders: 1800, revenue: 40000 },
-  { month: "Feb", sellers: 150, orders: 2200, revenue: 50000 },
-  { month: "Mar", sellers: 180, orders: 2500, revenue: 62000 },
-  { month: "Apr", sellers: 210, orders: 2800, revenue: 75000 },
-  { month: "May", sellers: 250, orders: 3200, revenue: 90000 },
-  { month: "Jun", sellers: 300, orders: 3800, revenue: 110000 },
-];
-
-// Updated revenue sources data
-const revenueSourcesData = [
-  { name: "Subscription Fees", value: 50000 },
-  { name: "Platform Fees", value: 30000 },
-  { name: "Wallet Recharge", value: 20000 },
-  { name: "Other Services", value: 10000 },
-];
-
 const revenueColors = ["#3B82F6", "#10B981", "#F59E0B", "#6366F1"];
-
-const orderStatusData = [
-  { status: "Received", count: 420, percentage: 28 },
-  { status: "Accepted", count: 320, percentage: 21 },
-  { status: "Ready", count: 260, percentage: 17 },
-  { status: "In Transit", count: 180, percentage: 12 },
-  { status: "Delivered", count: 300, percentage: 20 },
-  { status: "Cancelled", count: 25, percentage: 2 },
-];
 
 
 export default function Dashboard() {

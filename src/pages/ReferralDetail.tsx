@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { useScrollToTop } from "@/hooks/useScrollToTop";
 import { ArrowLeft, Gift, Users, Wallet } from "lucide-react";
-import { useToast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 import { ReferrerSummaryCard } from "@/components/referrals/ReferrerSummaryCard";
 import { ReferrerReferralsList } from "@/components/referrals/ReferrerReferralsList";
 import { ActionDialog } from "@/components/referrals/ActionDialog";
@@ -26,8 +26,6 @@ export default function ReferralDetail() {
   useScrollToTop();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { toast } = useToast();
-  
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
   const [confirmAction, setConfirmAction] = useState("");
   const [actionReason, setActionReason] = useState("");
@@ -41,8 +39,7 @@ export default function ReferralDetail() {
 
   // Function to handle status change actions
   const handleStatusAction = (action: string) => {
-    toast({
-      title: `Seller ${action}`,
+    toast.success(`Seller ${action}`, {
       description: actionReason 
         ? `${referrer.name} has been ${action.toLowerCase()}. Reason: ${actionReason}`
         : `${referrer.name} has been ${action.toLowerCase()}.`,
@@ -52,8 +49,7 @@ export default function ReferralDetail() {
   };
 
   const handleActivate = () => {
-    toast({
-      title: "Seller Activated",
+    toast.success("Seller Activated", {
       description: `${referrer.name} has been activated and can now participate in the referral program.`,
     });
   };

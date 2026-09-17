@@ -30,7 +30,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { useToast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { toggleDashboard } from "@/features/todoSlice";
@@ -69,10 +69,7 @@ export function Sidebar() {
   const isMobile = useIsMobile();
 
   const handleLogout = () => {
-    toast({
-      title: "Logged out successfully",
-      description: "You have been logged out of the system.",
-    });
+    toast.success("Logged out successfully");
     navigate("/");
   };
 
@@ -172,7 +169,7 @@ export function Sidebar() {
             key={item.title}
             to={item.path}
             className={({ isActive }) => cn(
-              "flex flex-col items-center py-1 px-3 text-xs",
+              "flex flex-col items-center py-1 px-2 text-xs",
               isActive
                 ? "text-bharatgo-primary"
                 : "text-gray-500 hover:text-bharatgo-primary"
@@ -193,7 +190,7 @@ export function Sidebar() {
         {/* More menu for additional items */}
         <Sheet>
           <SheetTrigger asChild>
-            <button className="flex flex-col items-center py-1 px-3 text-xs text-gray-500 hover:text-bharatgo-primary">
+            <button className="flex flex-col items-center py-1 px-2 text-xs text-gray-500 hover:text-bharatgo-primary">
               <Menu size={20} />
               <span className="mt-1">More</span>
             </button>
@@ -263,9 +260,6 @@ export function Sidebar() {
           </SheetContent>
         </Sheet>
       </div>
-      
-      {/* Add padding to main content to avoid overlap with bottom navigation */}
-      <div className="pb-16"></div>
     </>
   );
 }

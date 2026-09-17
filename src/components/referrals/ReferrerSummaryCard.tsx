@@ -9,7 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { formatDate } from "@/lib/formatters";
-import { useToast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 import { EditPartnerDialog } from "./EditPartnerDialog";  // Added import for EditPartnerDialog
 
 interface ReferrerData {
@@ -58,7 +58,6 @@ export function ReferrerSummaryCard({
   setActionReason,
   onPartnerUpdate
 }: ReferrerSummaryCardProps) {
-  const { toast } = useToast();
   const isPartner = referrer.category === "partner";
 
   const renderStatusBadge = (status: string) => {
@@ -238,8 +237,7 @@ export function ReferrerSummaryCard({
                 className="ml-2"
                 onClick={() => {
                   navigator.clipboard.writeText(referrer.referralLink);
-                  toast({
-                    title: "Copied to clipboard",
+                  toast.success("Copied to clipboard", {
                     description: "Referral link has been copied to clipboard.",
                   });
                 }}

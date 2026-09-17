@@ -6,14 +6,13 @@ import { SettingsTabs } from "@/components/settings/SettingsTabs";
 import { Card, CardContent } from "@/components/ui/card";
 
 export default function Settings() {
-  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("account");
-  
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
-    // Simulate loading data
     const timer = setTimeout(() => {
       setLoading(false);
-    }, 1000);
+    }, 300);
 
     return () => clearTimeout(timer);
   }, []);

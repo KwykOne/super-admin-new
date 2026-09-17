@@ -104,7 +104,7 @@ export function SellerDistributionCharts({
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6 animate-fade-in">
-      <Card className="col-span-1 w-[90vw] md:w-[85vw] lg:w-auto ">
+      <Card className="col-span-1 w-full">
         <CardHeader>
           <CardTitle>Onboarding Stages</CardTitle>
           <CardDescription>Seller distribution by stage</CardDescription>
@@ -121,7 +121,7 @@ export function SellerDistributionCharts({
         </CardContent>
       </Card>
       
-      <Card className="col-span-1 w-[90vw] md:w-[85vw] lg:w-auto ">
+      <Card className="col-span-1 w-full">
         <CardHeader>
           <CardTitle>Subscription Plans</CardTitle>
           <CardDescription>Seller distribution by plan</CardDescription>
@@ -138,7 +138,7 @@ export function SellerDistributionCharts({
         </CardContent>
       </Card>
       
-      <Card className="col-span-1 w-[90vw] md:w-[85vw] lg:w-auto" >
+      <Card className="col-span-1 w-full" >
         <CardHeader>
           <CardTitle>Status</CardTitle>
           <CardDescription>Seller distribution by status</CardDescription>

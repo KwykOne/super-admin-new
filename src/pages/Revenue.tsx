@@ -16,7 +16,7 @@ import axios from "axios";
 
 export default function Revenue() {
  
-  const [selectedPeriod, setSelectedPeriod] = useState<PeriodType>("allTime");
+  const [selectedPeriod, setSelectedPeriod] = useState<PeriodType>("today");
   const [dateRange, setDateRange] = useState<DateRange>();
   const [cityChartPeriod, setCityChartPeriod] = useState<PeriodType>("allTime");
   const [cityChartDateRange, setCityChartDateRange] = useState<DateRange>();
@@ -228,7 +228,7 @@ export default function Revenue() {
       title="Revenue Analytics"
       subtitle="Financial overview and revenue metrics"
     >
-      <div className="flex justify-end mb-6 w-[90vw] md:w-[80vw]">
+      <div className="flex justify-end mb-6">
         <PeriodFilter onPeriodChange={handlePeriodChange} defaultPeriod="today" />
       </div>
 

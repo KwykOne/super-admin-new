@@ -51,7 +51,7 @@ export function StatCard({
   return (
     <Card 
       className={cn(
-        "h-full transition-all duration-300 hover:shadow-md border-l-4 w-[90vw] md:w-auto",
+        "h-full transition-all duration-300 hover:shadow-md border-l-4 w-full",
         onClick && "cursor-pointer hover:-translate-y-1",
         variantClasses[variant]
       )}

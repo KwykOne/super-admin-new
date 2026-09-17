@@ -623,7 +623,7 @@ export default function SellerDetail() {
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         {/* Seller Status Card */}
-        <Card className="w-[90vw] md:w-auto">
+        <Card className="w-full md:w-auto">
           <CardHeader className="pb-3">
             <CardTitle className="text-lg font-medium">Seller Status</CardTitle>
           </CardHeader>
@@ -719,7 +719,7 @@ export default function SellerDetail() {
         </Card>
         
         {/* Contact Info Card */}
-        <Card className="w-[90vw] md:w-auto">
+        <Card className="w-full md:w-auto">
           <CardHeader className="pb-3">
             <CardTitle className="text-lg font-medium">Contact Information</CardTitle>
           </CardHeader>
@@ -769,7 +769,7 @@ export default function SellerDetail() {
         </Card>
         
         {/* Store Info Card */}
-        <Card className="w-[90vw] md:w-auto">
+        <Card className="w-full md:w-auto">
           <CardHeader className="pb-3">
             <CardTitle className="text-lg font-medium">Store Information</CardTitle>
           </CardHeader>
@@ -823,7 +823,7 @@ export default function SellerDetail() {
         </Card>
       </div>
    
-      <Tabs defaultValue="overview" className="mb-6 w-[90vw] md:w-auto">
+      <Tabs defaultValue="overview" className="mb-6 w-full md:w-auto">
         <TabsList className="mb-4">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="orders">Orders</TabsTrigger>
@@ -834,7 +834,7 @@ export default function SellerDetail() {
         <TabsContent value="overview">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Recent Performance Card */}
-            <Card className="w-[90vw] md:w-auto">
+            <Card className="w-full md:w-auto">
               <CardHeader>
                 <CardTitle className="text-lg font-medium">Recent Performance</CardTitle>
                 <CardDescription>Last 30 days</CardDescription>
@@ -864,7 +864,7 @@ export default function SellerDetail() {
             </Card>
             
             {/* Top Products Card */}
-            <Card className="w-[90vw] md:w-auto">
+            <Card className="w-full md:w-auto">
               <CardHeader>
                 <CardTitle className="text-lg font-medium">Top Products</CardTitle>
                 <CardDescription>Best selling products</CardDescription>
@@ -886,7 +886,7 @@ export default function SellerDetail() {
           </div>
           
           {/* Onboarding Timeline Card */}
-          <Card className="mt-6 w-[90vw] md:w-auto">
+          <Card className="mt-6 w-full md:w-auto">
             <CardHeader>
               <CardTitle className="text-lg font-medium">Seller Timeline</CardTitle>
               <CardDescription>Registration and onboarding journey</CardDescription>

@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { useToast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -21,7 +21,6 @@ interface EditPartnerDialogProps {
 }
 
 export function EditPartnerDialog({ partner, onSave }: EditPartnerDialogProps) {
-  const { toast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
   const [commissionRate, setCommissionRate] = useState(
     partner.commissionPlan?.commissionRate.toString() || "20"
@@ -42,8 +41,7 @@ export function EditPartnerDialog({ partner, onSave }: EditPartnerDialogProps) {
     onSave(partner.id, updates);
     setIsOpen(false);
     
-    toast({
-      title: "Partner details updated",
+    toast.success("Partner details updated", {
       description: `Commission plan updated for ${partner.name}`,
     });
   };

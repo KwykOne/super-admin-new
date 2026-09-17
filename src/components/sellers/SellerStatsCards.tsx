@@ -23,7 +23,7 @@ export function SellerStatsCards({
   
   return (
     <div className="mb-6 animate-fade-in">
-      <div className="flex justify-between items-center mb-4 w-[95vw] md:w-[80vw]">
+      <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
         <h2 className="text-xl font-semibold">Seller Statistics</h2>
         {onPeriodChange && (
           <PeriodFilter 
@@ -31,7 +31,7 @@ export function SellerStatsCards({
      />
         )}
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-[90vw] md:w-[85vw] lg:w-auto">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
         <StatCard 
           
           title="Total Sellers" 

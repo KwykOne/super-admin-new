@@ -32,53 +32,7 @@ import { useSelector } from "react-redux";
 import { RootState } from "@/store";
 import axios from "axios";
 
-const teamData = [
-  {
-    id: 1,
-    name: "Rajiv Sharma",
-    email: "rajiv@bharatgo.com",
-    role: "Super Admin",
-    access: ["Dashboard", "Sellers", "Orders", "Revenue", "Team", "Settings"],
-    status: "Active",
-    lastActive: "10 minutes ago",
-  },
-  {
-    id: 2,
-    name: "Priya Singh",
-    email: "priya@bharatgo.com",
-    role: "Admin",
-    access: ["Dashboard", "Sellers", "Orders", "Revenue"],
-    status: "Active",
-    lastActive: "1 hour ago",
-  },
-  {
-    id: 3,
-    name: "Anil Patel",
-    email: "anil@bharatgo.com",
-    role: "Finance Manager",
-    access: ["Dashboard", "Revenue"],
-    status: "Active",
-    lastActive: "3 hours ago",
-  },
-  {
-    id: 4,
-    name: "Meena Reddy",
-    email: "meena@bharatgo.com",
-    role: "Seller Support",
-    access: ["Sellers", "Orders"],
-    status: "Active",
-    lastActive: "2 days ago",
-  },
-  {
-    id: 5,
-    name: "Vikram Joshi",
-    email: "vikram@bharatgo.com",
-    role: "Analyst",
-    access: ["Dashboard", "Revenue"],
-    status: "Inactive",
-    lastActive: "2 weeks ago",
-  },
-];
+
 
 const roles = [
   { id: "3", name: "Super Admin", description: "Full access to all areas" },
@@ -95,12 +49,10 @@ export default function Team() {
   const baseURL = mode === 'dev' 
     ? import.meta.env.VITE_BACKEND_DEV_URL 
     : import.meta.env.VITE_BACKEND_PROD_URL;
-  const [members, setMembers] = useState(teamData);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [showAddMemberDialog, setShowAddMemberDialog] = useState(false);
   const {admins} = useAdminData()
-  console.log(admins)
   const [newMember, setNewMember] = useState({
     name: "",
     number: "",
@@ -111,14 +63,10 @@ export default function Team() {
 
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 1000);
+    setLoading(!admins || admins.length === 0 && loading);
+  }, [admins]);
 
-    return () => clearTimeout(timer);
-  }, []);
-
-  const filteredMembers = admins.filter(member => 
+  const filteredMembers = (admins || []).filter(member => 
     member.name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
     member.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     member.role_master?.role_name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -144,10 +92,9 @@ export default function Team() {
 
   
       toast.success("Created Admin Successfully");
-      console.log(response.data);
     } catch (err) {
       toast.error("Error creating Admin");
-      console.error("Error toggling member status:", err);
+      console.error("Error creating admin:", err);
     } finally {
       toast.dismiss(loadId);
     }
@@ -168,10 +115,9 @@ export default function Team() {
       );
   
       toast.success("Deleted Admin Successfully");
-      console.log(response.data);
     } catch (err) {
       toast.error("Error Deleting Admin");
-      console.error("Error Deleting member status:", err);
+      console.error("Error deleting admin:", err);
     } finally {
       toast.dismiss(loadId);
     }
@@ -193,10 +139,9 @@ export default function Team() {
       );
 
       toast.success("Updated admin status");
-      console.log(response.data);
     } catch (err) {
       toast.error("Error Updating Admin");
-      console.error("Error toggling member status:", err);
+      console.error("Error toggling admin status:", err);
     } finally {
       toast.dismiss(loadId);
     }
@@ -275,7 +220,7 @@ export default function Team() {
                   </label>
                   <Input
                     id="password"
-                    type="name"
+                    type="password"
                     value={newMember.password}
                     onChange={(e) => setNewMember({...newMember, password: e.target.value})}
                     className="col-span-3"

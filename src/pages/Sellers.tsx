@@ -694,7 +694,7 @@ export default function Sellers() {
         <DownloadButton filename="sellers-list" data={allStoreData} customDownload={getStoreData}/>
         </div>
                     
-          <div className="mt-6 overflow-x-hidden">
+          <div className="mt-6 overflow-x-auto">
             <SellerListTable sellers={paginatedSellers} loading={loading}  />
           </div>
         </CardContent>
