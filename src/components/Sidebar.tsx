@@ -65,7 +65,6 @@ export function Sidebar() {
   const dispatch = useDispatch()
   const location = useLocation();
   const navigate = useNavigate();
-  const { toast } = useToast();
   const isMobile = useIsMobile();
 
   const handleLogout = () => {
