@@ -39,16 +39,17 @@ type SidebarItem = {
   title: string;
   icon: React.ElementType;
   path: string;
+  wip?: boolean;
 };
 
 const mainItems: SidebarItem[] = [
   { title: "Dashboard", icon: LayoutDashboard, path: "/dashboard" },
   { title: "Sellers", icon: Users, path: "/sellers" },
   { title: "Orders", icon: ShoppingCart, path: "/orders" },
-  { title: "Settlements", icon: Wallet, path: "/settlements" },
+  { title: "Settlements", icon: Wallet, path: "/settlements", wip: true },
   { title: "Revenue", icon: IndianRupee, path: "/revenue" },
-  { title: "Referrals", icon: Gift, path: "/referrals" },
-  { title: "Partners", icon: Briefcase, path: "/partners" },
+  { title: "Referrals", icon: Gift, path: "/referrals", wip: true },
+  { title: "Partners", icon: Briefcase, path: "/partners", wip: true },
   { title: "Team", icon: UserCog, path: "/team" },
   { title: "Announcements", icon: Megaphone, path: "/announcements" },
 ];
@@ -178,7 +179,14 @@ export function Sidebar() {
             )}
           >
             <item.icon size={20} />
-            <span className="mt-1">{item.title}</span>
+            <span className="mt-1 flex items-center gap-1">
+              {item.title}
+              {item.wip && (
+                <span className="text-[8px] font-semibold px-1 py-0.5 rounded bg-amber-100 text-amber-800">
+                  WIP
+                </span>
+              )}
+            </span>
           </NavLink>
         ))}
         
@@ -211,7 +219,14 @@ export function Sidebar() {
                     )}
                   >
                     <item.icon size={20} />
-                    <span className="ml-3">{item.title}</span>
+                    <span className="ml-3 flex items-center gap-2">
+                      {item.title}
+                      {item.wip && (
+                        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-300">
+                          WIP
+                        </span>
+                      )}
+                    </span>
                   </NavLink>
                 ))}
                 
@@ -276,7 +291,16 @@ function NavItem({ item, collapsed, active }: { item: SidebarItem; collapsed: bo
             )}
           >
             <Icon size={20} />
-            {!collapsed && <span className="ml-3">{title}</span>}
+            {!collapsed && (
+              <span className="ml-3 flex items-center gap-2">
+                {title}
+                {item.wip && (
+                  <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-300">
+                    WIP
+                  </span>
+                )}
+              </span>
+            )}
           </NavLink>
         </TooltipTrigger>
         {collapsed && <TooltipContent side="right">{title}</TooltipContent>}

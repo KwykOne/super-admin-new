@@ -43,6 +43,7 @@ export function ReferalListDetails(){
         <DashboardLayout
         title={`${details.storeName}`}
         subtitle="Details"
+        wip
         >
             <div className="mb-4">
                 <Button 

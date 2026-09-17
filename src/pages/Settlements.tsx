@@ -223,9 +223,10 @@ export default function Settlements() {
   };
 
   return (
-    <DashboardLayout 
-      title="Settlements" 
+    <DashboardLayout
+      title="Settlements"
       subtitle="Track and manage seller settlement payments"
+      wip
     >
       <SettlementPeriodFilter onDataUpdate={handleDataUpdate} defaultPeriod="today" />
       

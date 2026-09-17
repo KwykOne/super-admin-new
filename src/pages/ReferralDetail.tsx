@@ -66,6 +66,7 @@ export default function ReferralDetail() {
     <DashboardLayout 
       title={`${referrer.name} Referral Details`} 
       subtitle={`Detailed view of all referrals by ${referrer.name}`}
+      wip
     >
       <div className="mb-4 flex justify-between">
         <Button 

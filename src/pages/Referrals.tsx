@@ -37,9 +37,10 @@ export default function Referrals() {
   const sellerReferrers = filteredReferrers.filter(ref => ref.category === "seller");
 
   return (
-    <DashboardLayout 
-      title="Seller Referral Program" 
+    <DashboardLayout
+      title="Seller Referral Program"
       subtitle="Track and manage sellers who refer new merchants to BharatGo"
+      wip
     >
       <ReferralPeriodFilter onPeriodChange={handlePeriodChange} />
       

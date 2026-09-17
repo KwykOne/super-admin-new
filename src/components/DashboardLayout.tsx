@@ -22,9 +22,10 @@ interface DashboardLayoutProps {
   subtitle?: string;
   action?: ReactNode;
   backLink?: string;
+  wip?: boolean;
 }
 
-export function DashboardLayout({ children, title, subtitle, action, backLink }: DashboardLayoutProps) {
+export function DashboardLayout({ children, title, subtitle, action, backLink, wip }: DashboardLayoutProps) {
   useScrollToTop(); // Add the hook here
 
   const { toast } = useToast();
@@ -61,7 +62,14 @@ export function DashboardLayout({ children, title, subtitle, action, backLink }:
             <div className="flex items-center justify-between">
 
               <div>
-                <h1 className="text-xl sm:text-2xl font-bold">{title}</h1>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-xl sm:text-2xl font-bold">{title}</h1>
+                  {wip && (
+                    <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-300 text-xs font-semibold">
+                      WIP
+                    </Badge>
+                  )}
+                </div>
                 {subtitle && <p className="text-gray-500 mt-1 text-sm">{subtitle}</p>}
               </div>
             </div>

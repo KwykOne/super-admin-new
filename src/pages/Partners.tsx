@@ -46,10 +46,11 @@ export default function Partners() {
   );
 
   return (
-    <DashboardLayout 
-      title="Partner Program" 
+    <DashboardLayout
+      title="Partner Program"
       subtitle="Manage and track channel partners who refer businesses to BharatGo"
       action={actionButton}
+      wip
     >
       <PartnerPeriodFilter onPeriodChange={handlePeriodChange} />
       

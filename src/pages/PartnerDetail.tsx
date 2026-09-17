@@ -152,6 +152,7 @@ export default function PartnerDetail() {
       title={`Partner Details: ${mockPartnerData.name}`} 
       subtitle={`Manage partner information and track referred sellers`}
       backLink="/partners"
+      wip
     >
       {/* Partner Summary Card */}
       <div className="grid gap-6 md:grid-cols-3 mb-6">
