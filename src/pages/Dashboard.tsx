@@ -299,7 +299,7 @@ export default function Dashboard() {
       </div>
 
       {/* --- Stat cards --- */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 min-w-0">
         <StatCard
           title="Total Sellers"
           value={convertNumber(dashboardData.storeCount)}
@@ -345,7 +345,7 @@ export default function Dashboard() {
       {/* --- Charts --- */}
       <div className="mt-10">
         <h2 className="text-xl font-bold mb-4">Performance Metrics</h2>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 min-w-0">
           <BarChart
             title="Monthly Growth"
             description="Sellers, orders and revenue trends"
@@ -371,7 +371,7 @@ export default function Dashboard() {
       </div>
 
       {/* --- Funnel & Order status --- */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6 min-w-0">
         <Card className="h-80">
           <CardHeader>
             <CardTitle>Seller Onboarding Funnel</CardTitle>

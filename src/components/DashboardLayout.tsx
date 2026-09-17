@@ -46,12 +46,15 @@ export function DashboardLayout({ children, title, subtitle, action, backLink, w
   const isCollapsed: any = useSelector((state:RootState) => state.modal.isSidebarCollapsed);
 
   return (
-    <div className="flex min-h-screen bg-gray-50 overflow-x-hidden">
+    <div className="flex min-h-screen w-full min-w-0 bg-gray-50 overflow-x-hidden">
       
       <Sidebar />
-      <div className={`flex-1 flex flex-col transition-all duration-300 dark:bg-black ${ isMobile ? "ml-0" :  isCollapsed ? " ml-16" : " ml-64"}`}>
-        <header className="bg-white dark:bg-black border-b border-gray-200/30 px-4 sm:px-6 py-4 flex items-center md:justify-center">
-          <div className="md:w-[80vw] dark:bg-black flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between w-full">
+      <div className={cn(
+        "flex min-w-0 flex-1 flex-col transition-all duration-300 dark:bg-black ml-0",
+        isCollapsed ? "md:ml-16" : "md:ml-64"
+      )}>
+        <header className="bg-white dark:bg-black border-b border-gray-200/30 px-4 sm:px-6 py-4">
+          <div className="w-full max-w-7xl mx-auto dark:bg-black flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex items-center justify-between">
 
               <div>
@@ -84,8 +87,8 @@ export function DashboardLayout({ children, title, subtitle, action, backLink, w
           </div>
         </header>
         
-        <main className="flex-1 overflow-y-auto overflow-x-auto p-4 sm:p-6 pb-20 md:pb-6">
-          <div className="max-w-7xl mx-auto">
+        <main className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 pb-20 md:pb-6">
+          <div className="w-full max-w-7xl min-w-0 mx-auto">
             {children}
           </div>
         </main>
@@ -111,9 +114,9 @@ function StoreTypeTabs({
  
   
   return (
-    <div className={cn("bg-gray-100 rounded-lg p-1 ", isMobile ? " md:w-full" : "")}>
+    <div className="w-full sm:w-auto bg-gray-100 rounded-lg p-1">
       <Tabs value={value} onValueChange={handleTabChange} className="w-full">
-        <TabsList className={cn("grid grid-cols-3 h-8")}>
+        <TabsList className="grid w-full grid-cols-3 h-8 sm:w-auto">
           <TabsTrigger value="both" className="text-xs">All</TabsTrigger>
           <TabsTrigger value="real" className="text-xs">Actual</TabsTrigger>
           <TabsTrigger value="test" className="text-xs">Test</TabsTrigger>

@@ -270,7 +270,6 @@ const statsByPeriod = {
 
 function OrderFilters({ searchQuery, onSearchChange, filters, onFilterChange, onResetFilters, statuses, paymentMethods, paymentStatuses, deliveryTypes, deliveryPartners }) {
   
-  console.log(statuses,paymentMethods,deliveryPartners,deliveryTypes)
   return (
     <Card className="mb-6">
       <CardHeader>

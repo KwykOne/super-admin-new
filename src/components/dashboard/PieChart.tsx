@@ -56,7 +56,7 @@ export function PieChart({
   // If title is provided, render as Card, otherwise render just the chart
   if (title) {
     return (
-      <Card className="h-full">
+      <Card className="h-full min-w-0">
         <CardHeader>
           <CardTitle>{title}</CardTitle>
           {description && <CardDescription>{description}</CardDescription>}

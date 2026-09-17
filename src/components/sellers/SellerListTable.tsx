@@ -33,7 +33,7 @@ export function SellerListTable({ sellers, loading }: SellerListTableProps) {
   }
 
   return (
-    <div>
+    <div className="w-full overflow-x-auto">
          <Table
       downloadable={false}
       data={sellers}
@@ -70,7 +70,7 @@ export function SellerListTable({ sellers, loading }: SellerListTableProps) {
           )}
         </TableRow>
       </TableHeader>
-      <TableBody className="w-[100%] overflow-x-auto md:overflow-hidden">
+      <TableBody>
         {sellers.length === 0 ? (
           <EmptySellerTable />
         ) : isApiSeller ? (

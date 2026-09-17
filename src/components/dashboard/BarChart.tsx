@@ -24,7 +24,7 @@ export function BarChart({
 }: BarChartProps) {
 
   return (
-    <Card className="h-full ">
+    <Card className="h-full min-w-0">
       <CardHeader>
         <CardTitle>{title}</CardTitle>
         {description && <CardDescription>{description}</CardDescription>}
