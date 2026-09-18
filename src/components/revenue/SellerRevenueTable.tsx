@@ -31,8 +31,46 @@ interface SellerRevenueTableProps {
   defaultPeriod?: PeriodType;
 }
 
+function num(v: any): number {
+  if (v === null || v === undefined || v === "") return 0;
+  const n = typeof v === "number" ? v : parseFloat(String(v).replace(/[^0-9.-]/g, ""));
+  return isNaN(n) ? 0 : n;
+}
+
+function str(v: any): string {
+  if (v === null || v === undefined || v === "") return "";
+  return String(v);
+}
+
+function pickFirst(obj: any, keys: string[]): any {
+  for (const k of keys) {
+    if (obj[k] !== undefined && obj[k] !== null && obj[k] !== "") return obj[k];
+  }
+  return undefined;
+}
+
+function mapApiResponse(item: any, index: number): SellerRevenue {
+  return {
+    id: str(pickFirst(item, ["id", "seller_id", "vendor_id", "store_id", "_id"])) || String(index + 1),
+    storeName: str(pickFirst(item, ["storeName", "store_name", "business_name", "name", "seller_name", "vendor_name"])) || "Unknown Store",
+    ownerName: str(pickFirst(item, ["ownerName", "owner_name", "seller_name", "vendor_name", "name"])),
+    plan: str(pickFirst(item, ["plan", "plan_name", "subscription_plan", "current_plan"])) || "N/A",
+    city: str(pickFirst(item, ["city", "store_city", "location"])) || "N/A",
+    subscriptionRevenue: num(pickFirst(item, ["subscriptionRevenue", "subscription_revenue", "subscription_revenue_amount", "subscription"])),
+    platformFees: num(pickFirst(item, ["platformFees", "platform_fees", "platform_fee", "platformFee", "commission"])),
+    walletRecharge: num(pickFirst(item, ["walletRecharge", "wallet_recharge", "wallet_revenue", "wallet", "wallet_amount"])),
+    otherServices: num(pickFirst(item, ["otherServices", "other_services", "others", "other_revenue", "other"])),
+    totalRevenue: num(pickFirst(item, ["totalRevenue", "total_revenue", "revenue", "total_revenue_amount"])),
+    totalOrders: num(pickFirst(item, ["totalOrders", "total_orders", "orders", "order_count", "delivered_orders", "orders_count"])),
+    totalGMV: num(pickFirst(item, ["totalGMV", "total_gmv", "gmv", "total_gmv_amount", "total_sales", "gross_merchandise_value"])),
+    registrationDate: str(pickFirst(item, ["registrationDate", "registration_date", "created_at", "createdAt", "joined_date", "join_date"])),
+    status: str(pickFirst(item, ["status", "store_status", "is_active", "active"])) || "Active",
+  };
+}
+
 export function SellerRevenueTable({ defaultPeriod = "allTime" }: SellerRevenueTableProps) {
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [sellerRevenues, setSellerRevenues] = useState<SellerRevenue[]>([]);
   const [selectedPeriod, setSelectedPeriod] = useState<PeriodType>(defaultPeriod);
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
@@ -40,112 +78,37 @@ export function SellerRevenueTable({ defaultPeriod = "allTime" }: SellerRevenueT
   const token = localStorage.getItem("userToken");
   const mode = useSelector((state: RootState) => state.modal.mode);
   const dataType = useSelector((state: RootState) => state.modal.dataType);
-  
+
   const baseURL = mode === 'dev' ? import.meta.env.VITE_BACKEND_DEV_URL : import.meta.env.VITE_BACKEND_PROD_URL;
 
   useEffect(() => {
     async function fetchSellerRevenueData() {
       setLoading(true);
+      setError(null);
       try {
-        // In a real implementation, this would be an API call
-        // const url = dateRange ? 
-        //   `${baseURL}api/v1/admin/revenue/seller-revenue?is_test=${dataType}&from=${dateRange.from}&to=${dateRange.to}` : 
-        //   `${baseURL}api/v1/admin/revenue/seller-revenue?is_test=${dataType}&date=${selectedPeriod}`;
-        
-        // const response = await axios.get(url, {
-        //   headers: {
-        //     Authorization: `Bearer ${token}`
-        //   }
-        // });
-        // setSellerRevenues(response.data.sellerRevenues);
-        
-        // Mock data for demonstration
-        const mockData: SellerRevenue[] = [
-          {
-            id: "1",
-            storeName: "Joshi Jewellers",
-            ownerName: "Rahul Joshi",
-            plan: "Enterprise",
-            city: "Jaipur",
-            subscriptionRevenue: 24000,
-            platformFees: 62250,
-            walletRecharge: 10000,
-            otherServices: 5000,
-            totalRevenue: 101250,
-            totalOrders: 421,
-            totalGMV: 1245000,
-            registrationDate: "2023-01-15",
-            status: "Active"
-          },
-          {
-            id: "2",
-            storeName: "Sharma Electronics",
-            ownerName: "Vivek Sharma",
-            plan: "PRO",
-            city: "Delhi",
-            subscriptionRevenue: 12000,
-            platformFees: 27100,
-            walletRecharge: 5000,
-            otherServices: 3000,
-            totalRevenue: 47100,
-            totalOrders: 532,
-            totalGMV: 542000,
-            registrationDate: "2023-02-20",
-            status: "Active"
-          },
-          {
-            id: "3",
-            storeName: "Reddy Handicrafts",
-            ownerName: "Suresh Reddy",
-            plan: "PRO",
-            city: "Hyderabad",
-            subscriptionRevenue: 12000,
-            platformFees: 14250,
-            walletRecharge: 3000,
-            otherServices: 2000,
-            totalRevenue: 31250,
-            totalOrders: 310,
-            totalGMV: 285000,
-            registrationDate: "2023-03-05",
-            status: "Active"
-          },
-          {
-            id: "4",
-            storeName: "Kumar Furniture",
-            ownerName: "Anil Kumar",
-            plan: "PRO-Trial",
-            city: "Bengaluru",
-            subscriptionRevenue: 0,
-            platformFees: 16250,
-            walletRecharge: 2000,
-            otherServices: 1000,
-            totalRevenue: 19250,
-            totalOrders: 156,
-            totalGMV: 325000,
-            registrationDate: "2023-04-10",
-            status: "Active"
-          },
-          {
-            id: "5",
-            storeName: "Patel Fashion",
-            ownerName: "Nikhil Patel",
-            plan: "Standard",
-            city: "Mumbai",
-            subscriptionRevenue: 6000,
-            platformFees: 10500,
-            walletRecharge: 1500,
-            otherServices: 1000,
-            totalRevenue: 19000,
-            totalOrders: 230,
-            totalGMV: 210000,
-            registrationDate: "2023-05-22",
-            status: "Active"
-          }
-        ];
-        setSellerRevenues(mockData);
-        setTimeout(() => setLoading(false), 500);
-      } catch (error) {
-        console.error("Error fetching seller revenue data:", error);
+        const url = dateRange
+          ? `${baseURL}api/v1/admin/revenue/seller-revenue?is_test=${dataType}&from=${dateRange.from}&to=${dateRange.to}`
+          : `${baseURL}api/v1/admin/revenue/seller-revenue?is_test=${dataType}&date=${selectedPeriod}`;
+
+        const response = await axios.get(url, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        const rawData: any[] =
+          response.data.sellerRevenues ||
+          response.data.seller_revenues ||
+          response.data.data ||
+          response.data.vendors ||
+          response.data.sellers ||
+          [];
+
+        const mapped = rawData.map(mapApiResponse);
+        setSellerRevenues(mapped);
+      } catch (err: any) {
+        console.error("Error fetching seller revenue data:", err);
+        setError(err?.response?.data?.message || err?.message || "Failed to load seller revenue data");
+        setSellerRevenues([]);
+      } finally {
         setLoading(false);
       }
     }
@@ -183,7 +146,7 @@ export function SellerRevenueTable({ defaultPeriod = "allTime" }: SellerRevenueT
     Total_Revenue: formatCurrency(seller.totalRevenue),
     Total_Orders: seller.totalOrders,
     Total_GMV: formatCurrency(seller.totalGMV),
-    Registration_Date: formatDate(seller.registrationDate),
+    Registration_Date: seller.registrationDate ? formatDate(seller.registrationDate) : "N/A",
     Status: seller.status
   })), [sellerRevenues]);
 
@@ -192,9 +155,9 @@ export function SellerRevenueTable({ defaultPeriod = "allTime" }: SellerRevenueT
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Revenue by Seller</CardTitle>
         <div className="flex gap-4 items-center">
-          <PeriodFilter 
-            onPeriodChange={handlePeriodChange} 
-            defaultPeriod={defaultPeriod} 
+          <PeriodFilter
+            onPeriodChange={handlePeriodChange}
+            defaultPeriod={defaultPeriod}
           />
         </div>
       </CardHeader>
@@ -205,12 +168,17 @@ export function SellerRevenueTable({ defaultPeriod = "allTime" }: SellerRevenueT
               <Skeleton key={i} className="h-14 w-full" />
             ))}
           </div>
+        ) : error ? (
+          <div className="text-center py-8">
+            <p className="text-red-500 font-medium mb-2">Failed to load data</p>
+            <p className="text-sm text-gray-500">{error}</p>
+          </div>
         ) : (
           <div className="overflow-x-auto">
-            <Table 
-              downloadable 
-              data={sellerRevenues} 
-              allData={downloadData} 
+            <Table
+              downloadable
+              data={sellerRevenues}
+              allData={downloadData}
               filename="seller-revenue-report"
               pagination={true}
             >
@@ -242,7 +210,9 @@ export function SellerRevenueTable({ defaultPeriod = "allTime" }: SellerRevenueT
                       <TableCell className="font-medium">
                         <div>
                           {seller.storeName}
-                          <div className="text-xs text-gray-500">Owner: {seller.ownerName}</div>
+                          {seller.ownerName && (
+                            <div className="text-xs text-gray-500">Owner: {seller.ownerName}</div>
+                          )}
                         </div>
                       </TableCell>
                       <TableCell>{seller.city}</TableCell>
@@ -258,7 +228,7 @@ export function SellerRevenueTable({ defaultPeriod = "allTime" }: SellerRevenueT
                       <TableCell className="text-right font-medium">{formatCurrency(seller.totalRevenue)}</TableCell>
                       <TableCell className="text-right">{seller.totalOrders}</TableCell>
                       <TableCell className="text-right">{formatCurrency(seller.totalGMV)}</TableCell>
-                      <TableCell>{formatDate(seller.registrationDate)}</TableCell>
+                      <TableCell>{seller.registrationDate ? formatDate(seller.registrationDate) : "N/A"}</TableCell>
                     </TableRow>
                   ))
                 )}
