@@ -7,7 +7,7 @@ import { TopPerformingStores } from "@/components/revenue/TopPerformingStores";
 import { RevenueByCityChart } from "@/components/revenue/RevenueByCityChart";
 import { RevenueByBusinessCategoryChart } from "@/components/revenue/RevenueByBusinessCategoryChart";
 import { RevenueStatsChart } from "@/components/revenue/RevenuStatsChart";
-import { SellerRevenueTable } from "@/components/revenue/SellerRevenueTable";
+import { RevenueReport } from "@/components/revenue/RevenueReport";
 import { PeriodFilter, PeriodType } from "@/components/PeriodFilter";
 import { DateRange } from "react-day-picker";
 import { useSelector } from "react-redux";
@@ -266,7 +266,7 @@ export default function Revenue() {
         />
       </div>
 
-      <SellerRevenueTable defaultPeriod="allTime" />
+      <RevenueReport defaultPeriod="allTime" />
     </DashboardLayout>
   );
 }
