@@ -82,7 +82,7 @@ Token stored in `localStorage.userToken`. No auth guard on other routes.
 | Revenue by city chart | `GET api/v1/admin/revenue/revenue-by-city` | **Live** |
 | Revenue by category chart | `GET api/v1/admin/revenue/revenue-by-category` | **Live** |
 | Daily revenue chart | `GET api/v1/admin/revenue/revenue-stats` | **Live** (falls back to `mockData` if API returns empty) |
-| Seller revenue table | `GET api/v1/admin/revenue/seller-revenue` | **Mock** — API call is commented out; hardcoded `mockData` array used |
+| Seller revenue table | `GET api/v1/admin/revenue/top-performing` | **Live** — uses the same filtered seller revenue response as Top Performing Stores |
 
 ## Settlements (`/settlements`) — WIP
 

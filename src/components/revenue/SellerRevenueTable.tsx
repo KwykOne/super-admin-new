@@ -16,10 +16,10 @@ interface SellerRevenue {
   ownerName: string;
   plan: string;
   city: string;
-  subscriptionRevenue: number;
-  platformFees: number;
-  walletRecharge: number;
-  otherServices: number;
+  subscriptionRevenue: number | null;
+  platformFees: number | null;
+  walletRecharge: number | null;
+  otherServices: number | null;
   totalRevenue: number;
   totalOrders: number;
   totalGMV: number;
@@ -49,6 +49,11 @@ function pickFirst(obj: any, keys: string[]): any {
   return undefined;
 }
 
+function amount(item: any, keys: string[]): number | null {
+  const value = pickFirst(item, keys);
+  return value === undefined ? null : num(value);
+}
+
 function mapApiResponse(item: any, index: number): SellerRevenue {
   return {
     id: str(pickFirst(item, ["id", "seller_id", "vendor_id", "store_id", "_id"])) || String(index + 1),
@@ -56,10 +61,10 @@ function mapApiResponse(item: any, index: number): SellerRevenue {
     ownerName: str(pickFirst(item, ["ownerName", "owner_name", "seller_name", "vendor_name", "name"])),
     plan: str(pickFirst(item, ["plan", "plan_name", "subscription_plan", "current_plan"])) || "N/A",
     city: str(pickFirst(item, ["city", "store_city", "location"])) || "N/A",
-    subscriptionRevenue: num(pickFirst(item, ["subscriptionRevenue", "subscription_revenue", "subscription_revenue_amount", "subscription"])),
-    platformFees: num(pickFirst(item, ["platformFees", "platform_fees", "platform_fee", "platformFee", "commission"])),
-    walletRecharge: num(pickFirst(item, ["walletRecharge", "wallet_recharge", "wallet_revenue", "wallet", "wallet_amount"])),
-    otherServices: num(pickFirst(item, ["otherServices", "other_services", "others", "other_revenue", "other"])),
+    subscriptionRevenue: amount(item, ["subscriptionRevenue", "subscription_revenue", "subscription_revenue_amount", "subscription"]),
+    platformFees: amount(item, ["platformFees", "platform_fees", "platform_fee", "platformFee", "commission"]),
+    walletRecharge: amount(item, ["walletRecharge", "wallet_recharge", "wallet_revenue", "wallet", "wallet_amount"]),
+    otherServices: amount(item, ["otherServices", "other_services", "others", "other_revenue", "other"]),
     totalRevenue: num(pickFirst(item, ["totalRevenue", "total_revenue", "revenue", "total_revenue_amount"])),
     totalOrders: num(pickFirst(item, ["totalOrders", "total_orders", "orders", "order_count", "delivered_orders", "orders_count"])),
     totalGMV: num(pickFirst(item, ["totalGMV", "total_gmv", "gmv", "total_gmv_amount", "total_sales", "gross_merchandise_value"])),
@@ -87,16 +92,15 @@ export function SellerRevenueTable({ defaultPeriod = "allTime" }: SellerRevenueT
       setError(null);
       try {
         const url = dateRange
-          ? `${baseURL}api/v1/admin/revenue/seller-revenue?is_test=${dataType}&from=${dateRange.from}&to=${dateRange.to}`
-          : `${baseURL}api/v1/admin/revenue/seller-revenue?is_test=${dataType}&date=${selectedPeriod}`;
+          ? `${baseURL}api/v1/admin/revenue/top-performing?is_test=${dataType}&from=${dateRange.from}&to=${dateRange.to}`
+          : `${baseURL}api/v1/admin/revenue/top-performing?is_test=${dataType}&date=${selectedPeriod}`;
 
         const response = await axios.get(url, {
           headers: { Authorization: `Bearer ${token}` }
         });
 
         const rawData: any[] =
-          response.data.sellerRevenues ||
-          response.data.seller_revenues ||
+          response.data.topVendors ||
           response.data.data ||
           response.data.vendors ||
           response.data.sellers ||
@@ -121,8 +125,8 @@ export function SellerRevenueTable({ defaultPeriod = "allTime" }: SellerRevenueT
     setDateRange(customDateRange);
   };
 
-  const formatCurrency = (value: number) => {
-    return `₹${value.toLocaleString('en-IN')}`;
+  const formatCurrency = (value: number | null) => {
+    return value === null ? "—" : `₹${value.toLocaleString('en-IN')}`;
   };
 
   const getPlanColor = (plan: string) => {
@@ -139,10 +143,10 @@ export function SellerRevenueTable({ defaultPeriod = "allTime" }: SellerRevenueT
     Owner: seller.ownerName,
     City: seller.city,
     Plan: seller.plan,
-    Subscription_Revenue: formatCurrency(seller.subscriptionRevenue),
-    Platform_Fees: formatCurrency(seller.platformFees),
-    Wallet_Recharge: formatCurrency(seller.walletRecharge),
-    Other_Services: formatCurrency(seller.otherServices),
+    Subscription_Revenue: seller.subscriptionRevenue === null ? "N/A" : formatCurrency(seller.subscriptionRevenue),
+    Platform_Fees: seller.platformFees === null ? "N/A" : formatCurrency(seller.platformFees),
+    Wallet_Recharge: seller.walletRecharge === null ? "N/A" : formatCurrency(seller.walletRecharge),
+    Other_Services: seller.otherServices === null ? "N/A" : formatCurrency(seller.otherServices),
     Total_Revenue: formatCurrency(seller.totalRevenue),
     Total_Orders: seller.totalOrders,
     Total_GMV: formatCurrency(seller.totalGMV),

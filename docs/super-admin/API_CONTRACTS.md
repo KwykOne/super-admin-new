@@ -165,9 +165,10 @@
 - **Query:** `date`, `is_test`
 - **Used by:** Revenue page — RevenueStatsChart
 
-### GET `api/v1/admin/revenue/seller-revenue`
+### GET `api/v1/admin/revenue/top-performing`
 - **Query:** `is_test`, `date` (or `from`/`to`)
-- **Used by:** Revenue page — SellerRevenueTable (currently commented out / mock)
+- **Response:** `{ topVendors: [{ business_name, city, plan_name, delivered_orders, gmv, total_revenue, ... }] }`
+- **Used by:** Revenue page — TopPerformingStores and Revenue by Seller table
 
 ## Vendor plan expiry (Dashboard)
 
