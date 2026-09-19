@@ -213,20 +213,18 @@
 - **Note:** The older repository (github.com/Bharat-Go/super-admin-dashboard-bg)
   had a commented-out reference to this endpoint but it never worked.
 
-### MISSING: Transaction-level revenue report endpoint
-- **Needed by:** Revenue page -- Revenue Report (per-transaction CA/GST table)
-- **Status:** No endpoint found in the BharatGo backend API. The live
-  transaction table at `super.bharatgo.com/revenue` is powered by a code
-  version or endpoint not present in this repository.
-- **Required response fields:** `invoice_number`, `invoice_date`,
-  `payment_ref`, `amount_received`, `razorpay_fee`, `razorpay_tax`,
-  `hsn_sac`, `entity_gstin`, `customer_payment_date`, `type`,
-  `payment_channel`, `entity_name`, `business_name`, `mobile_number`,
-  `base_amount`, `gst_amount`, `total_amount`.
-- **Expected query params:** `is_test`, `date` (or `from`/`to`).
-- **See:** `docs/SUPER_ADMIN_KNOWLEDGEBASE.md` section 6 for full details.
-- **Current UI:** Shows "Backend transaction endpoint required" error state.
-  No fake or derived data is displayed.
+### GET `api/v1/admin/revenue/vendor-plan-payment-data`
+- **Query:** `is_test` (both/real/test), `page` (1-based), `limit` (50/100, backend caps at 100), `date` (period keyword), `month`, `year`, `startDate`, `endDate`
+- **Auth:** `Authorization: Bearer <token>` -- protected by `superAdminOnly` middleware
+- **Response:** `{ status, count, page, limit, totalPages, summary: { subscriptionRevenue, walletRevenue, totalRevenue }, data: [{ sn, customerPaymentDate, amountReceivedDate, type, channel, entityName, gstin, businessName, businessMobile, planName, invoiceDate, invoiceManual, invoiceSystem, hsnSac, planPrice, gstOnPlan, otherFees, gstOnOtherFees, totalPaid, razorpayFee, razorpayTax, tds, amountReceived, comment }] }`
+- **Used by:** Revenue page -- Revenue Report (per-transaction CA/GST table)
+- **See:** `docs/SUPER_ADMIN_KNOWLEDGEBASE.md` section 6 for full contract
+
+### GET `api/v1/admin/export/filtered-vendor-plan-payment-data`
+- **Query:** Same `is_test` and period params as above (no `page`/`limit`)
+- **Auth:** `Authorization: Bearer <token>` -- protected by `superAdminOnly` middleware
+- **Response:** XLSX file blob
+- **Used by:** Revenue page -- Revenue Report Excel export
 
 ## Unknown / TBD endpoints
 

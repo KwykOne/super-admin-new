@@ -24,13 +24,13 @@ as the `is_test` query parameter on API calls and is **separate from** the
 Production/Development environment mode. The value comes from Redux
 (`state.modal.dataType`).
 
-- **All** -- includes both real and test stores
-- **Actual** -- real stores only (`is_test` = false)
-- **Test** -- test stores only (`is_test` = true)
+- **All** -- `is_test=both` (includes both real and test stores)
+- **Actual** -- `is_test=real` (real stores only)
+- **Test** -- `is_test=test` (test stores only)
 
 Environment mode and the is_test filter are independent dimensions:
 
-| | is_test = All | is_test = Actual | is_test = Test |
+| | is_test = both (All) | is_test = real (Actual) | is_test = test (Test) |
 |---|---|---|---|
 | **Production** | prod API, all stores | prod API, real stores | prod API, test stores |
 | **Development** | dev API, all stores | dev API, real stores | dev API, test stores |
@@ -58,26 +58,37 @@ purposes and data sources:
 
 - **Purpose:** Transaction-level records for a CA to understand, calculate,
   and file GST returns.
-- **Data source:** A backend transaction-ledger endpoint that returns
-  individual payment/invoice records. **This endpoint has not yet been
-  located** (see section 5).
-- **Required columns (exact order):**
-  1. S.N. (serial number)
-  2. Customer Payment Date
-  3. Type (e.g. Plan Purchase, Wallet Recharge)
-  4. Payment Channel
-  5. Entity Name
-  6. Entity GSTIN
-  7. Business Name
-  8. Mobile Number
-  9. Invoice Date
-  10. Invoice Number
-  11. HSN/SAC
-  12. Base Amount
-  13. GST on Base Amount
-  14. Total Amount
-- **Sorting:** Oldest transaction first (ascending by customer payment date).
+- **Data source:** `GET api/v1/admin/revenue/vendor-plan-payment-data`
+  (paginated) and `GET api/v1/admin/export/filtered-vendor-plan-payment-data`
+  (Excel export). See section 6 for full contract.
+- **Sorting:** Oldest transaction first (backend returns rows ordered by
+  payment_date ASC).
 - **Each row = one transaction.**
+- **24 columns in exact order:**
+  1. S. N.
+  2. Customer Payment Date
+  3. Amount Received Date
+  4. Type
+  5. Channel
+  6. Entity Name
+  7. GSTIN
+  8. Business Name
+  9. Mobile Number
+  10. Plan Name
+  11. Invoice Date
+  12. Invoice # (Manual)
+  13. Invoice # (System Generated)
+  14. HSN/SAC
+  15. Plan Price
+  16. GST on Plan Price
+  17. Other Fees
+  18. GST on Other Fees
+  19. Total Amount Paid by Customer
+  20. RazorPay Fees
+  21. Tax on RazorPay Fees
+  22. TDS Deducted
+  23. Amount Received in BharatGo Bank
+  24. Comment
 
 ## 4. Rules for revenue data
 
@@ -94,9 +105,11 @@ purposes and data sources:
    Reddy Handicrafts, Kumar Furniture, Patel Fashion) and a commented-out
    request to the 404 endpoint. It does not contain a transaction-level
    Revenue Report component and does not explain the live transaction table.
-5. The transaction-level table visible at `https://super.bharatgo.com/revenue`
-   comes from a code version or backend endpoint not present in this
-   repository's committed main/master source.
+5. The live Revenue Report is implemented in the original repository's
+   active siddhesh branch via `src/components/revenue/RevenueExportPanel.tsx`
+   and `src/utils/revenueExportUtils.ts`, not the old mock SellerRevenueTable.
+6. Use real row field values exactly as returned by the backend, including
+   `-` and `Not generated` placeholder values. Do not replace them.
 
 ## 5. Database and backend constraints
 
@@ -109,34 +122,123 @@ purposes and data sources:
 4. **Do not add or modify backend endpoints** from Bolt. If a needed endpoint
    is missing, document the gap and show an error state in the UI.
 
-## 6. Missing backend contract: transaction ledger endpoint
+## 6. Verified backend contract: transaction ledger endpoints
 
-### What is missing
+> Found in the original repository's active siddhesh branch. Both endpoints
+> require `Authorization: Bearer {localStorage userToken}` and are protected
+> by backend `superAdminOnly` middleware.
 
-A backend endpoint that returns individual revenue transactions with these
-fields (or equivalent under different names):
+### 6.1 Paginated table data
+
+```
+GET {baseURL}api/v1/admin/revenue/vendor-plan-payment-data
+```
+
+**Query parameters:**
+
+| Param | Value | Notes |
+|---|---|---|
+| `is_test` | `both` / `real` / `test` | Maps from All / Actual / Test filter |
+| `page` | 1-based integer | Page number |
+| `limit` | 50 or 100 | Backend caps at 100; do not request 200/500 in one call |
+| `date` | Period keyword | See period mapping below |
+| `month` | 1-12 | Required for thisMonth/lastMonth |
+| `year` | YYYY | Required for thisMonth/lastMonth |
+| `startDate` | ISO string | Required for customData |
+| `endDate` | ISO string | Required for customData |
+
+**Period mapping:**
+
+| UI period | `date` param | Extra params |
+|---|---|---|
+| allTime / all | `all` | none |
+| last7days / lastSeven | `lastSeven` | none |
+| last30days / lastThirty | `lastThirty` | none |
+| thisMonth | `thisMonth` | `month=1..12&year=YYYY` |
+| lastMonth | `lastMonth` | `month=1..12&year=YYYY` |
+| customRange | `customData` | `startDate=ISO&endDate=ISO` |
+| Other values | pass through as `date={value}` | none |
+
+**Response shape:**
+
+```json
+{
+  "status": true,
+  "count": 150,
+  "page": 1,
+  "limit": 50,
+  "totalPages": 3,
+  "summary": {
+    "subscriptionRevenue": 50000,
+    "walletRevenue": 30000,
+    "totalRevenue": 80000
+  },
+  "data": [ { ... row fields ... } ]
+}
+```
+
+The backend combines `VendorPlanPaymentMaster` rows with qualifying orphan
+wallet topups, filters dates and vendor `is_test`, sorts by payment date
+ASC, and formats each row for the client.
+
+**Data row fields (24):**
 
 | Field | Description |
 |---|---|
-| `invoice_number` | Real invoice number per transaction |
-| `invoice_date` | Date the invoice was generated |
-| `payment_ref` / `payment_id` | Payment reference from the payment gateway |
-| `amount_received` | Total amount received for this transaction |
-| `razorpay_fee` / `payment_gateway_fee` | Fee charged by the payment gateway |
-| `razorpay_tax` / `payment_gateway_tax` | Tax on the gateway fee |
-| `hsn_sac` / `hsn` / `sac` | HSN or SAC code for the service |
-| `entity_gstin` | GSTIN of the seller entity |
-| `customer_payment_date` | Date the customer made the payment |
-| `type` / `revenue_type` | Revenue head (Plan Purchase, Wallet Recharge, etc.) |
-| `payment_channel` | Payment channel (Razorpay, bank transfer, etc.) |
-| `entity_name` | Legal entity name |
-| `business_name` | Business/store name |
-| `mobile_number` | Seller's mobile number |
-| `base_amount` | Pre-tax amount |
-| `gst_amount` | GST charged on the base amount |
-| `total_amount` | Base + GST (should match amount_received) |
+| `sn` | Serial number |
+| `customerPaymentDate` | Date the customer made the payment |
+| `amountReceivedDate` | Date amount was received |
+| `type` | Revenue head (Plan Purchase, Wallet Recharge, etc.) |
+| `channel` | Payment channel (Razorpay, etc.) |
+| `entityName` | Legal entity name |
+| `gstin` | Entity GSTIN |
+| `businessName` | Business/store name |
+| `businessMobile` | Seller's mobile number |
+| `planName` | Subscription plan name |
+| `invoiceDate` | Invoice date |
+| `invoiceManual` | Manually entered invoice number |
+| `invoiceSystem` | System-generated invoice number |
+| `hsnSac` | HSN or SAC code |
+| `planPrice` | Plan price (pre-tax) |
+| `gstOnPlan` | GST on plan price |
+| `otherFees` | Other fees |
+| `gstOnOtherFees` | GST on other fees |
+| `totalPaid` | Total amount paid by customer |
+| `razorpayFee` | Razorpay processing fee |
+| `razorpayTax` | Tax on Razorpay fee |
+| `tds` | TDS deducted |
+| `amountReceived` | Amount received in BharatGo bank |
+| `comment` | Comment/notes |
 
-### Endpoints checked and confirmed insufficient
+### 6.2 Excel export
+
+```
+GET {baseURL}api/v1/admin/export/filtered-vendor-plan-payment-data
+```
+
+**Query parameters:** Same `is_test` and period params as 6.1 (no `page`/
+`limit`).
+
+**Response:** XLSX file blob (`Content-Type:
+application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`).
+Download with `responseType: "blob"`.
+
+### 6.3 Summary cards
+
+Summary cards should use the `summary` object from the list response, not
+reconstructed UI values. Available fields: `subscriptionRevenue`,
+`walletRevenue`, `totalRevenue`, and potentially others.
+
+### 6.4 Pagination
+
+- Default page size: 50
+- UI page size options: 50, 100 (backend caps at 100)
+- Do not request 200 or 500 rows in a single API call -- paginate instead
+- Page numbers are 1-based
+
+## 7. Endpoints confirmed insufficient for transaction-level data
+
+These aggregate/analytics endpoints cannot produce per-transaction rows:
 
 | Endpoint | Returns | Why it's insufficient |
 |---|---|---|
@@ -148,35 +250,3 @@ fields (or equivalent under different names):
 | `GET api/v1/admin/revenue/revenue-by-category` | Per-category aggregates | No per-transaction data |
 | `GET api/v1/admin/revenue/revenue-stats` | Daily aggregates | No per-transaction data |
 | `GET api/v1/admin/revenue/seller-revenue` | **404 -- does not exist** | Endpoint not found |
-
-### Likely backend tables (not accessible from frontend)
-
-Based on field names, the transaction data likely lives in tables such as:
-- `vendor_plan_payment_master` -- plan subscription payments
-- A wallet recharge ledger table
-- An invoice master table with `invoice_number`, `invoice_date`, HSN/SAC
-
-These are backend database tables accessed by server-side controllers, not
-by the frontend. The frontend can only consume them through an API endpoint.
-
-### Current UI state
-
-The Revenue Report section currently shows a clear "Backend transaction
-endpoint required" error state with the exact column headers in place. No
-fake or derived data is displayed. When the real endpoint is identified,
-the component at `src/components/revenue/RevenueReport.tsx` should be
-updated to call it with the standard `Authorization` header, `is_test`
-query parameter, and `date`/`from`/`to` period parameters, then map the
-actual response fields to the 14 columns listed in section 3.
-
-## 7. Next steps to resolve the missing contract
-
-1. Inspect the deployed `super.bharatgo.com` app's network requests (with
-   an authenticated admin session) to identify the exact API call that
-   populates the transaction table on the Revenue page.
-2. Alternatively, search the BharatGo backend repository for controllers
-   referencing `vendor_plan_payment_master`, `invoice_number`, `amount_received`,
-   or `hsn_sac`.
-3. Once the endpoint path, HTTP method, query parameters, and response
-   structure are confirmed, update `API_CONTRACTS.md` and wire
-   `RevenueReport.tsx` to use it.
