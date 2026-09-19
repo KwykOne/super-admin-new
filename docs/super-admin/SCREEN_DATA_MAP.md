@@ -83,6 +83,7 @@ Token stored in `localStorage.userToken`. No auth guard on other routes.
 | Revenue by category chart | `GET api/v1/admin/revenue/revenue-by-category` | **Live** |
 | Daily revenue chart | `GET api/v1/admin/revenue/revenue-stats` | **Live** (falls back to `mockData` if API returns empty) |
 | Seller revenue table | `GET api/v1/admin/revenue/top-performing` | **Live** — uses the same filtered seller revenue response as Top Performing Stores |
+| Revenue Report (transaction-level) | **MISSING** — no transaction ledger endpoint found | **Error state** — shows "Backend transaction endpoint required"; no fake data displayed. See `docs/SUPER_ADMIN_KNOWLEDGEBASE.md` |
 
 ## Settlements (`/settlements`) — WIP
 

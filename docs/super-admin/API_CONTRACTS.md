@@ -208,6 +208,26 @@
 - The Announcements page reads from `VITE_BACKEND_DEV_URL` / `VITE_BACKEND_PROD_URL`.
 - Exact endpoint: TBD — inspect `src/pages/Announcements.tsx` for current path.
 
+### GET `api/v1/admin/revenue/seller-revenue` -- DOES NOT EXIST
+- **Status:** 404. Confirmed not found. Do not use.
+- **Note:** The older repository (github.com/Bharat-Go/super-admin-dashboard-bg)
+  had a commented-out reference to this endpoint but it never worked.
+
+### MISSING: Transaction-level revenue report endpoint
+- **Needed by:** Revenue page -- Revenue Report (per-transaction CA/GST table)
+- **Status:** No endpoint found in the BharatGo backend API. The live
+  transaction table at `super.bharatgo.com/revenue` is powered by a code
+  version or endpoint not present in this repository.
+- **Required response fields:** `invoice_number`, `invoice_date`,
+  `payment_ref`, `amount_received`, `razorpay_fee`, `razorpay_tax`,
+  `hsn_sac`, `entity_gstin`, `customer_payment_date`, `type`,
+  `payment_channel`, `entity_name`, `business_name`, `mobile_number`,
+  `base_amount`, `gst_amount`, `total_amount`.
+- **Expected query params:** `is_test`, `date` (or `from`/`to`).
+- **See:** `docs/SUPER_ADMIN_KNOWLEDGEBASE.md` section 6 for full details.
+- **Current UI:** Shows "Backend transaction endpoint required" error state.
+  No fake or derived data is displayed.
+
 ## Unknown / TBD endpoints
 
 - **Settlements:** No API endpoint found in source. Page uses hardcoded mock
