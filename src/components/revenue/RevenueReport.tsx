@@ -50,11 +50,11 @@ function pickFirst(obj: any, keys: string[]): any {
 
 const PAGE_SIZE_OPTIONS = [50, 100, 200, 500];
 
-export function RevenueReport({ defaultPeriod = "allTime" }: RevenueReportProps) {
+export function RevenueReport({ defaultPeriod = "thisMonth" }: RevenueReportProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [reportRows, setReportRows] = useState<RevenueReportRow[]>([]);
-  const [selectedPeriod, setSelectedPeriod] = useState<PeriodType>(defaultPeriod);
+  const [selectedPeriod, setSelectedPeriod] = useState<PeriodType>("thisMonth");
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
 
   const token = localStorage.getItem("userToken");
@@ -145,7 +145,7 @@ export function RevenueReport({ defaultPeriod = "allTime" }: RevenueReportProps)
             invoiceNumber: `INV-${str(pickFirst(store, ["bharatgo_unique_id", "id", "seller_id", "vendor_id"])).slice(0, 8).toUpperCase() || String(index + 1).padStart(4, "0")}`,
             status,
           };
-        });
+        }).filter(row => row.amount > 0);
 
         setReportRows(rows);
       } catch (err: any) {

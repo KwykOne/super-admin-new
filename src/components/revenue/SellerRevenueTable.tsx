@@ -56,11 +56,11 @@ function amount(item: any, keys: string[]): number | null {
 
 const PAGE_SIZE_OPTIONS = [50, 100, 200, 500];
 
-export function SellerRevenueTable({ defaultPeriod = "allTime" }: SellerRevenueTableProps) {
+export function SellerRevenueTable({ defaultPeriod = "thisMonth" }: SellerRevenueTableProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [sellerRevenues, setSellerRevenues] = useState<SellerRevenue[]>([]);
-  const [selectedPeriod, setSelectedPeriod] = useState<PeriodType>(defaultPeriod);
+  const [selectedPeriod, setSelectedPeriod] = useState<PeriodType>("thisMonth");
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
 
   const token = localStorage.getItem("userToken");
@@ -146,7 +146,13 @@ export function SellerRevenueTable({ defaultPeriod = "allTime" }: SellerRevenueT
             registrationDate: regDate,
             status,
           };
-        });
+        }).filter(seller =>
+          (seller.totalRevenue !== null && seller.totalRevenue > 0) ||
+          (seller.subscriptionRevenue !== null && seller.subscriptionRevenue > 0) ||
+          (seller.platformFees !== null && seller.platformFees > 0) ||
+          (seller.walletRecharge !== null && seller.walletRecharge > 0) ||
+          (seller.otherServices !== null && seller.otherServices > 0)
+        );
 
         setSellerRevenues(mapped);
       } catch (err: any) {

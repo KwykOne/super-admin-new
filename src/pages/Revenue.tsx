@@ -267,9 +267,9 @@ export default function Revenue() {
         />
       </div>
 
-      <SellerRevenueTable defaultPeriod="allTime" />
+      <SellerRevenueTable defaultPeriod="thisMonth" />
 
-      <RevenueReport defaultPeriod="allTime" />
+      <RevenueReport defaultPeriod="thisMonth" />
     </DashboardLayout>
   );
 }
