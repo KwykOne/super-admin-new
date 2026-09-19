@@ -10,20 +10,21 @@ import { convertNumber, formatDate } from "@/utils/dataUtils";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
 
-interface RevenueReportRow {
-  id: string;
+interface TransactionRow {
+  sn: number;
   paymentDate: string;
-  businessName: string;
-  mobile: string;
-  city: string;
-  gstin: string;
-  planName: string;
-  amount: number;
-  paymentType: string;
+  type: string;
   paymentChannel: string;
+  entityName: string;
+  entityGSTIN: string;
+  businessName: string;
+  mobileNumber: string;
   invoiceDate: string;
   invoiceNumber: string;
-  status: string;
+  hsnSac: string;
+  baseAmount: number;
+  gstOnBase: number;
+  totalAmount: number;
 }
 
 interface RevenueReportProps {
@@ -48,12 +49,18 @@ function pickFirst(obj: any, keys: string[]): any {
   return undefined;
 }
 
+const GST_RATE = 0.18;
+const SAC_SAAS = "998314";
+const SAC_WALLET = "998593";
+const SAC_PLATFORM = "998361";
+const SAC_OTHER = "998599";
+
 const PAGE_SIZE_OPTIONS = [50, 100, 200, 500];
 
 export function RevenueReport({ defaultPeriod = "thisMonth" }: RevenueReportProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [reportRows, setReportRows] = useState<RevenueReportRow[]>([]);
+  const [transactions, setTransactions] = useState<TransactionRow[]>([]);
   const [selectedPeriod, setSelectedPeriod] = useState<PeriodType>("thisMonth");
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
 
@@ -83,75 +90,161 @@ export function RevenueReport({ defaultPeriod = "thisMonth" }: RevenueReportProp
         const topVendors: any[] = topRes.data.topVendors || topRes.data.data || [];
         const allStores: any[] = storesRes.data.payload || storesRes.data.stores || [];
 
-        const revenueByStoreKey = new Map<string, any>();
-        for (const vendor of topVendors) {
+        const storeByKey = new Map<string, any>();
+        for (const store of allStores) {
           const keys = [
-            pickFirst(vendor, ["id", "seller_id", "vendor_id", "store_id", "_id"]),
-            pickFirst(vendor, ["business_name", "store_name", "name", "seller_name"]),
-          ].filter(k => k !== undefined && k !== null && k !== "");
-          for (const key of keys) {
-            revenueByStoreKey.set(String(key), vendor);
-          }
-        }
-
-        const lookupRevenue = (store: any): any | null => {
-          const candidates = [
             pickFirst(store, ["id", "seller_id", "vendor_id", "store_id", "_id", "bharatgo_unique_id"]),
             store.businessDetails?.business_name,
             pickFirst(store, ["business_name", "store_name", "name", "vendor_name"]),
           ].filter(k => k !== undefined && k !== null && k !== "");
+          for (const key of keys) {
+            storeByKey.set(String(key), store);
+          }
+        }
+
+        const lookupStore = (vendor: any): any | null => {
+          const candidates = [
+            pickFirst(vendor, ["id", "seller_id", "vendor_id", "store_id", "_id", "bharatgo_unique_id"]),
+            pickFirst(vendor, ["business_name", "store_name", "name", "seller_name"]),
+          ].filter(k => k !== undefined && k !== null && k !== "");
           for (const key of candidates) {
-            const found = revenueByStoreKey.get(String(key));
+            const found = storeByKey.get(String(key));
             if (found) return found;
           }
           return null;
         };
 
-        const rows: RevenueReportRow[] = allStores.map((store, index): RevenueReportRow => {
-          const revenue = lookupRevenue(store);
+        interface RawTxn {
+          paymentDate: string;
+          type: string;
+          paymentChannel: string;
+          entityName: string;
+          entityGSTIN: string;
+          businessName: string;
+          mobileNumber: string;
+          invoiceDate: string;
+          invoiceNumber: string;
+          hsnSac: string;
+          totalAmount: number;
+        }
+
+        const rawTxns: RawTxn[] = [];
+
+        for (const vendor of topVendors) {
+          const store = lookupStore(vendor) || vendor;
           const businessName = store.businessDetails?.business_name
-            || str(pickFirst(store, ["business_name", "store_name", "name", "seller_name", "vendor_name"]))
-            || "Unknown Store";
+            || str(pickFirst(vendor, ["business_name", "store_name", "name", "seller_name"]))
+            || "Unknown";
+          const entityName = businessName;
           const mobile = str(pickFirst(store, ["mobile_no", "mobile", "phone", "contact_no"]))
             || str(store.businessDetails?.mobile_no);
-          const city = store.businessDetails?.city
-            || str(pickFirst(store, ["city", "store_city"]))
-            || "N/A";
           const gstin = str(pickFirst(store, ["gstin", "gst_no", "gst_number"]))
             || str(store.businessDetails?.gstin);
-          const planName = store.planDetails?.globalPlanMaster?.plan_name
-            || str(pickFirst(store, ["plan", "plan_name", "subscription_plan"]))
-            || "N/A";
-          const regDate = str(pickFirst(store, ["created_on", "created_at", "createdAt", "registration_date", "join_date"]));
-          const subscriptionRevenue = revenue ? num(pickFirst(revenue, ["subscriptionRevenue", "subscription_revenue", "subscription"])) : 0;
-          const walletRevenue = revenue ? num(pickFirst(revenue, ["walletRecharge", "wallet_recharge", "wallet_revenue", "wallet"])) : 0;
-          const totalRevenue = revenue ? num(pickFirst(revenue, ["totalRevenue", "total_revenue", "revenue"])) : 0;
-          const paymentType = subscriptionRevenue > 0 ? "Subscription" : walletRevenue > 0 ? "Wallet Recharge" : totalRevenue > 0 ? "Other" : "—";
-          const amount = subscriptionRevenue || walletRevenue || totalRevenue;
-          const status = str(pickFirst(store, ["store_status", "status"])) || "Active";
+          const regDate = str(pickFirst(store, ["created_on", "created_at", "createdAt", "registration_date", "join_date"]))
+            || str(pickFirst(vendor, ["payment_date", "transaction_date", "date"]));
+          const storeId = str(pickFirst(store, ["bharatgo_unique_id", "id", "seller_id", "vendor_id"]))
+            || str(pickFirst(vendor, ["id", "seller_id", "vendor_id"]));
 
+          const subRev = num(pickFirst(vendor, ["subscriptionRevenue", "subscription_revenue", "subscription"]));
+          const walletRev = num(pickFirst(vendor, ["walletRecharge", "wallet_recharge", "wallet_revenue", "wallet"]));
+          const platformFee = num(pickFirst(vendor, ["platformFees", "platform_fees", "platform_fee", "commission"]));
+          const otherRev = num(pickFirst(vendor, ["otherServices", "other_services", "others", "other_revenue"]));
+
+          if (subRev > 0) {
+            rawTxns.push({
+              paymentDate: regDate,
+              type: "Plan Purchase",
+              paymentChannel: "Razorpay",
+              entityName,
+              entityGSTIN: gstin,
+              businessName,
+              mobileNumber: mobile,
+              invoiceDate: regDate,
+              invoiceNumber: `INV-SUB-${storeId.slice(0, 8).toUpperCase()}`,
+              hsnSac: SAC_SAAS,
+              totalAmount: subRev,
+            });
+          }
+          if (walletRev > 0) {
+            rawTxns.push({
+              paymentDate: regDate,
+              type: "Wallet Recharge",
+              paymentChannel: "Razorpay",
+              entityName,
+              entityGSTIN: gstin,
+              businessName,
+              mobileNumber: mobile,
+              invoiceDate: regDate,
+              invoiceNumber: `INV-WLT-${storeId.slice(0, 8).toUpperCase()}`,
+              hsnSac: SAC_WALLET,
+              totalAmount: walletRev,
+            });
+          }
+          if (platformFee > 0) {
+            rawTxns.push({
+              paymentDate: regDate,
+              type: "Platform Fees",
+              paymentChannel: "Razorpay",
+              entityName,
+              entityGSTIN: gstin,
+              businessName,
+              mobileNumber: mobile,
+              invoiceDate: regDate,
+              invoiceNumber: `INV-PLF-${storeId.slice(0, 8).toUpperCase()}`,
+              hsnSac: SAC_PLATFORM,
+              totalAmount: platformFee,
+            });
+          }
+          if (otherRev > 0) {
+            rawTxns.push({
+              paymentDate: regDate,
+              type: "Other Services",
+              paymentChannel: "Razorpay",
+              entityName,
+              entityGSTIN: gstin,
+              businessName,
+              mobileNumber: mobile,
+              invoiceDate: regDate,
+              invoiceNumber: `INV-OTH-${storeId.slice(0, 8).toUpperCase()}`,
+              hsnSac: SAC_OTHER,
+              totalAmount: otherRev,
+            });
+          }
+        }
+
+        rawTxns.sort((a, b) => {
+          const da = a.paymentDate ? new Date(a.paymentDate).getTime() : 0;
+          const db = b.paymentDate ? new Date(b.paymentDate).getTime() : 0;
+          return da - db;
+        });
+
+        const rows: TransactionRow[] = rawTxns.map((txn, idx) => {
+          const total = txn.totalAmount;
+          const base = total / (1 + GST_RATE);
+          const gst = total - base;
           return {
-            id: str(pickFirst(store, ["id", "seller_id", "vendor_id", "store_id", "_id", "bharatgo_unique_id"])) || String(index + 1),
-            paymentDate: regDate,
-            businessName,
-            mobile: mobile || "N/A",
-            city,
-            gstin: gstin || "N/A",
-            planName,
-            amount,
-            paymentType,
-            paymentChannel: "Razorpay",
-            invoiceDate: regDate,
-            invoiceNumber: `INV-${str(pickFirst(store, ["bharatgo_unique_id", "id", "seller_id", "vendor_id"])).slice(0, 8).toUpperCase() || String(index + 1).padStart(4, "0")}`,
-            status,
+            sn: idx + 1,
+            paymentDate: txn.paymentDate,
+            type: txn.type,
+            paymentChannel: txn.paymentChannel,
+            entityName: txn.entityName,
+            entityGSTIN: txn.entityGSTIN || "N/A",
+            businessName: txn.businessName,
+            mobileNumber: txn.mobileNumber || "N/A",
+            invoiceDate: txn.invoiceDate,
+            invoiceNumber: txn.invoiceNumber,
+            hsnSac: txn.hsnSac,
+            baseAmount: base,
+            gstOnBase: gst,
+            totalAmount: total,
           };
-        }).filter(row => row.amount > 0);
+        });
 
-        setReportRows(rows);
+        setTransactions(rows);
       } catch (err: any) {
         console.error("Error fetching revenue report data:", err);
         setError(err?.response?.data?.message || err?.message || "Failed to load revenue report data");
-        setReportRows([]);
+        setTransactions([]);
       } finally {
         setLoading(false);
       }
@@ -165,37 +258,36 @@ export function RevenueReport({ defaultPeriod = "thisMonth" }: RevenueReportProp
     setDateRange(customDateRange);
   };
 
-  const formatCurrency = (value: number) => {
-    if (value === 0) return "—";
-    return `₹${convertNumber(value)}`;
-  };
+  const fmt = (value: number) => `₹${convertNumber(value)}`;
 
-  const getPaymentTypeBadge = (type: string) => {
-    if (type === "Subscription") return "bg-blue-100 text-blue-800";
+  const getTypeBadge = (type: string) => {
+    if (type === "Plan Purchase") return "bg-blue-100 text-blue-800";
     if (type === "Wallet Recharge") return "bg-green-100 text-green-800";
-    if (type === "Other") return "bg-amber-100 text-amber-800";
+    if (type === "Platform Fees") return "bg-amber-100 text-amber-800";
     return "bg-gray-100 text-gray-800";
   };
 
-  const totalRecords = reportRows.length;
-  const totalSubscription = reportRows.reduce((sum, r) => sum + (r.paymentType === "Subscription" ? r.amount : 0), 0);
-  const totalWallet = reportRows.reduce((sum, r) => sum + (r.paymentType === "Wallet Recharge" ? r.amount : 0), 0);
-  const totalAmount = reportRows.reduce((sum, r) => sum + r.amount, 0);
+  const totalRecords = transactions.length;
+  const totalBase = transactions.reduce((sum, r) => sum + r.baseAmount, 0);
+  const totalGST = transactions.reduce((sum, r) => sum + r.gstOnBase, 0);
+  const totalAmount = transactions.reduce((sum, r) => sum + r.totalAmount, 0);
 
-  const downloadData = useMemo(() => reportRows.map(row => ({
-    Payment_Date: row.paymentDate ? formatDate(row.paymentDate) : "N/A",
-    Business_Name: row.businessName,
-    Mobile: row.mobile,
-    City: row.city,
-    GSTIN: row.gstin,
-    Plan: row.planName,
-    Amount: row.amount === 0 ? "N/A" : formatCurrency(row.amount),
-    Payment_Type: row.paymentType,
+  const downloadData = useMemo(() => transactions.map(row => ({
+    S_N: row.sn,
+    Customer_Payment_Date: row.paymentDate ? formatDate(row.paymentDate) : "N/A",
+    Type: row.type,
     Payment_Channel: row.paymentChannel,
+    Entity_Name: row.entityName,
+    Entity_GSTIN: row.entityGSTIN,
+    Business_Name: row.businessName,
+    Mobile_Number: row.mobileNumber,
     Invoice_Date: row.invoiceDate ? formatDate(row.invoiceDate) : "N/A",
     Invoice_Number: row.invoiceNumber,
-    Status: row.status,
-  })), [reportRows]);
+    HSN_SAC: row.hsnSac,
+    Base_Amount: fmt(row.baseAmount),
+    GST_on_Base_Amount: fmt(row.gstOnBase),
+    Total_Amount: fmt(row.totalAmount),
+  })), [transactions]);
 
   return (
     <Card className="mt-6">
@@ -203,7 +295,7 @@ export function RevenueReport({ defaultPeriod = "thisMonth" }: RevenueReportProp
         <div>
           <CardTitle>Revenue Report</CardTitle>
           <p className="text-sm text-muted-foreground mt-1">
-            Transaction-level revenue records for GST filing purposes
+            Transaction-level revenue records for GST filing purposes (sorted oldest to newest)
           </p>
         </div>
         <div className="flex gap-4 items-center">
@@ -229,27 +321,27 @@ export function RevenueReport({ defaultPeriod = "thisMonth" }: RevenueReportProp
           <>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
               <div className="p-4 border rounded-lg bg-blue-50 dark:bg-blue-950/20">
-                <div className="text-sm text-muted-foreground">Total Records</div>
+                <div className="text-sm text-muted-foreground">Total Transactions</div>
                 <div className="text-2xl font-bold text-blue-700 dark:text-blue-400">{totalRecords.toLocaleString()}</div>
               </div>
               <div className="p-4 border rounded-lg bg-green-50 dark:bg-green-950/20">
-                <div className="text-sm text-muted-foreground">Subscription Revenue</div>
-                <div className="text-2xl font-bold text-green-700 dark:text-green-400">{formatCurrency(totalSubscription)}</div>
+                <div className="text-sm text-muted-foreground">Base Amount</div>
+                <div className="text-2xl font-bold text-green-700 dark:text-green-400">{fmt(totalBase)}</div>
               </div>
               <div className="p-4 border rounded-lg bg-amber-50 dark:bg-amber-950/20">
-                <div className="text-sm text-muted-foreground">Wallet Revenue</div>
-                <div className="text-2xl font-bold text-amber-700 dark:text-amber-400">{formatCurrency(totalWallet)}</div>
+                <div className="text-sm text-muted-foreground">GST (18%)</div>
+                <div className="text-2xl font-bold text-amber-700 dark:text-amber-400">{fmt(totalGST)}</div>
               </div>
               <div className="p-4 border rounded-lg bg-indigo-50 dark:bg-indigo-950/20">
                 <div className="text-sm text-muted-foreground">Total Amount</div>
-                <div className="text-2xl font-bold text-indigo-700 dark:text-indigo-400">{formatCurrency(totalAmount)}</div>
+                <div className="text-2xl font-bold text-indigo-700 dark:text-indigo-400">{fmt(totalAmount)}</div>
               </div>
             </div>
 
             <div className="overflow-x-auto">
               <Table
                 downloadable
-                data={reportRows}
+                data={transactions}
                 allData={downloadData}
                 filename="revenue-report-gst"
                 pagination={true}
@@ -258,48 +350,50 @@ export function RevenueReport({ defaultPeriod = "thisMonth" }: RevenueReportProp
               >
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Payment Date</TableHead>
-                    <TableHead className="w-[200px]">Business Name</TableHead>
-                    <TableHead>Mobile</TableHead>
-                    <TableHead>City</TableHead>
-                    <TableHead>GSTIN</TableHead>
-                    <TableHead>Plan</TableHead>
-                    <TableHead className="text-right">Amount</TableHead>
-                    <TableHead>Payment Type</TableHead>
+                    <TableHead className="w-[50px]">S.N.</TableHead>
+                    <TableHead>Customer Payment Date</TableHead>
+                    <TableHead>Type</TableHead>
                     <TableHead>Payment Channel</TableHead>
+                    <TableHead className="w-[180px]">Entity Name</TableHead>
+                    <TableHead>Entity GSTIN</TableHead>
+                    <TableHead>Business Name</TableHead>
+                    <TableHead>Mobile Number</TableHead>
                     <TableHead>Invoice Date</TableHead>
                     <TableHead>Invoice Number</TableHead>
-                    <TableHead>Status</TableHead>
+                    <TableHead>HSN/SAC</TableHead>
+                    <TableHead className="text-right">Base Amount</TableHead>
+                    <TableHead className="text-right">GST on Base Amount</TableHead>
+                    <TableHead className="text-right">Total Amount</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {reportRows.length === 0 ? (
+                  {transactions.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={12} className="text-center py-8 text-gray-500">
-                        No revenue records found for the selected period
+                      <TableCell colSpan={14} className="text-center py-8 text-gray-500">
+                        No revenue transactions found for the selected period
                       </TableCell>
                     </TableRow>
                   ) : (
-                    reportRows.map(row => (
-                      <TableRow key={row.id}>
+                    transactions.map(row => (
+                      <TableRow key={row.sn}>
+                        <TableCell className="font-medium">{row.sn}</TableCell>
                         <TableCell>{row.paymentDate ? formatDate(row.paymentDate) : "N/A"}</TableCell>
-                        <TableCell className="font-medium">{row.businessName}</TableCell>
-                        <TableCell>{row.mobile}</TableCell>
-                        <TableCell>{row.city}</TableCell>
-                        <TableCell className="text-xs">{row.gstin}</TableCell>
-                        <TableCell>{row.planName}</TableCell>
-                        <TableCell className="text-right font-medium">{formatCurrency(row.amount)}</TableCell>
                         <TableCell>
-                          <Badge className={getPaymentTypeBadge(row.paymentType)}>
-                            {row.paymentType}
+                          <Badge className={getTypeBadge(row.type)}>
+                            {row.type}
                           </Badge>
                         </TableCell>
                         <TableCell>{row.paymentChannel}</TableCell>
+                        <TableCell className="font-medium">{row.entityName}</TableCell>
+                        <TableCell className="text-xs">{row.entityGSTIN}</TableCell>
+                        <TableCell>{row.businessName}</TableCell>
+                        <TableCell>{row.mobileNumber}</TableCell>
                         <TableCell>{row.invoiceDate ? formatDate(row.invoiceDate) : "N/A"}</TableCell>
                         <TableCell className="text-xs font-mono">{row.invoiceNumber}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{row.status}</Badge>
-                        </TableCell>
+                        <TableCell className="text-xs font-mono">{row.hsnSac}</TableCell>
+                        <TableCell className="text-right">{fmt(row.baseAmount)}</TableCell>
+                        <TableCell className="text-right">{fmt(row.gstOnBase)}</TableCell>
+                        <TableCell className="text-right font-medium">{fmt(row.totalAmount)}</TableCell>
                       </TableRow>
                     ))
                   )}
