@@ -165,7 +165,7 @@ export default function Dashboard() {
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
   const token = localStorage.getItem('userToken');
   const { role: currentRole, status: roleStatus } = useRole();
-  const isSuperAdminUser = currentRole === "Super Admin" || roleStatus === "loading";
+  const isSuperAdminUser = currentRole === "Super Admin" || roleStatus === "loading" || roleStatus === "error";
 
   
   const [dashboardData,      setDashboardData]      = useState({}) as any;

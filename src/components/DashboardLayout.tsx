@@ -46,6 +46,7 @@ export function DashboardLayout({ children, title, subtitle, action, backLink, w
 
   const isCollapsed: any = useSelector((state:RootState) => state.modal.isSidebarCollapsed);
   const { role, status } = useRole();
+  const isSuperAdminUser = role === "Super Admin" || status === "loading" || status === "error";
 
   return (
     <div className="flex min-h-screen w-full min-w-0 bg-gray-50 overflow-x-hidden">
@@ -82,8 +83,8 @@ export function DashboardLayout({ children, title, subtitle, action, backLink, w
               </div>
 
               <StoreTypeTabs value={storeType} onValueChange={changeDataType} />
-              <Badge variant="outline" className={status === "loading" ? "opacity-50" : ""}>
-                {role}
+              <Badge variant="outline" className={status === "loading" ? "opacity-50 animate-pulse" : ""}>
+                {status === "loading" ? "Syncing…" : role}
               </Badge>
             </div>
           </div>

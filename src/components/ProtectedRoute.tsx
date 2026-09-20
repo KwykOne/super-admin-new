@@ -19,15 +19,11 @@ function LoadingShell() {
 export function SuperAdminRoute({ children }: ProtectedRouteProps) {
   const { role, status } = useRole();
 
-  // While role is being synced from the backend, show a loading shell.
-  // This prevents redirecting a Super Admin before their role is confirmed.
-  if (status === "loading") {
-    return <LoadingShell />;
-  }
+  // While the role is being synced or errored, do NOT redirect.
+  // A Super Admin must never be bounced before their role is confirmed.
+  if (status === "loading") return <LoadingShell />;
+  if (status === "error") return <LoadingShell />;
 
-  if (role !== "Super Admin") {
-    return <Navigate to="/dashboard" replace />;
-  }
-
+  if (role !== "Super Admin") return <Navigate to="/dashboard" replace />;
   return <>{children}</>;
 }

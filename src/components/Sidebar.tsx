@@ -74,11 +74,10 @@ export function Sidebar() {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { role, status } = useRole();
-  const isSuperAdminUser = role === "Super Admin";
 
-  // While role is syncing, show all items so a Super Admin doesn't see
-  // a flash of Team-restricted UI. After sync, filter properly.
-  const showProtected = status === "loading" || isSuperAdminUser;
+  // While role is syncing or errored, show all items so a Super Admin
+  // never sees a flash of Team-restricted UI and is never downgraded.
+  const showProtected = status === "loading" || status === "error" || role === "Super Admin";
 
   const handleLogout = () => {
     toast.success("Logged out successfully");
@@ -138,7 +137,7 @@ export function Sidebar() {
 
         {/* Bottom navigation */}
         <div className="py-6 space-y-1 border-t border-gray-200/15">
-          {bottomItems.filter(item => isSuperAdminUser || !isProtectedPath(item.path)).map((item) => (
+          {bottomItems.filter(item => showProtected || !isProtectedPath(item.path)).map((item) => (
             <NavItem
               key={item.title}
               item={item}
