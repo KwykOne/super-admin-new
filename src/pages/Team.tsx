@@ -145,25 +145,27 @@ export default function Team() {
     const loadId = toast.loading("Updating role...");
     const body = { role_id: Number(newRoleId) };
     const headers = { Authorization: `Bearer ${token}` };
+    const endpoints = [
+      `api/v1/admin/update-admin-role/${id}`,
+      `api/v1/admin/update-role/${id}`,
+      `api/v1/admin/admin-role/${id}`,
+      `api/v1/admin/update-admin/${id}`,
+      `api/v1/admin/edit-admin-role/${id}`,
+      `api/v1/admin/change-role/${id}`,
+    ];
     try {
-      let response;
-      try {
-        response = await axios.post(
-          `${baseURL}api/v1/admin/update-admin-role/${id}`,
-          body,
-          { headers },
-        );
-      } catch (postErr: any) {
-        if (postErr.response?.status === 404) {
-          response = await axios.put(
-            `${baseURL}api/v1/admin/update-admin-role/${id}`,
-            body,
-            { headers },
-          );
-        } else {
-          throw postErr;
+      let response: any = null;
+      let lastError: any = null;
+      for (const endpoint of endpoints) {
+        try {
+          response = await axios.post(`${baseURL}${endpoint}`, body, { headers });
+          break;
+        } catch (err: any) {
+          lastError = err;
+          if (err.response?.status !== 404) break;
         }
       }
+      if (!response) throw lastError;
       if (response.status < 200 || response.status >= 300) {
         throw new Error(`Role update returned status ${response.status}`);
       }
