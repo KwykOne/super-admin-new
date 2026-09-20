@@ -48,7 +48,7 @@ export default function Team() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [showAddMemberDialog, setShowAddMemberDialog] = useState(false);
-  const {admins} = useAdminData()
+  const { admins, refreshAdmins } = useAdminData()
   const [newMember, setNewMember] = useState({
     name: "",
     number: "",
@@ -144,15 +144,20 @@ export default function Team() {
   const handleUpdateRole = async (id: number, newRoleId: string) => {
     const loadId = toast.loading("Updating role...");
     try {
-      await axios.post(
+      const response = await axios.post(
         `${baseURL}api/v1/admin/update-admin-role/${id}`,
-        { role_id: newRoleId },
+        { role_id: Number(newRoleId) },
         { headers: { Authorization: `Bearer ${token}` } },
       );
+      if (response.status < 200 || response.status >= 300) {
+        throw new Error(`Role update returned status ${response.status}`);
+      }
+      await refreshAdmins();
       toast.success("Role updated successfully");
-    } catch (err) {
-      toast.error("Error updating role");
-      console.error("Error updating role:", err);
+    } catch (err: any) {
+      const message = err.response?.data?.message || err.response?.data?.error;
+      toast.error(message ? `Error updating role: ${message}` : "Error updating role");
+      console.error("Error updating role:", err.response?.data || err);
     } finally {
       toast.dismiss(loadId);
     }

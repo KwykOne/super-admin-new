@@ -1,6 +1,6 @@
 import { RootState } from "@/store";
 import axios from "axios";
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { useSelector } from "react-redux";
 
 export default function useAdminData() {
@@ -8,11 +8,11 @@ export default function useAdminData() {
   const [admins, setAdmins] = useState([]);
   const mode = useSelector((state: RootState) => state.modal.mode);
 
-  const baseURL = mode === 'dev' 
-    ? import.meta.env.VITE_BACKEND_DEV_URL 
+  const baseURL = mode === 'dev'
+    ? import.meta.env.VITE_BACKEND_DEV_URL
     : import.meta.env.VITE_BACKEND_PROD_URL;
 
-  async function getAdmins() {
+  const getAdmins = useCallback(async () => {
     try {
       const response = await axios.get(`${baseURL}api/v1/admin/get-superadmins`,{
         headers:{
@@ -23,7 +23,7 @@ export default function useAdminData() {
     } catch (err) {
       console.error("Error fetching admins:", err);
     }
-  }
+  }, [baseURL, token]);
 
   useEffect(() => {
     getAdmins(); // fetch on mount
@@ -32,7 +32,7 @@ export default function useAdminData() {
     }, 3000);
 
     return () => clearInterval(id); // cleanup
-  }, []);
+  }, [getAdmins]);
 
-  return { admins };
+  return { admins, refreshAdmins: getAdmins };
 }
