@@ -70,10 +70,22 @@ function adminMobile(admin: any): string {
   ]));
 }
 
-function extractRoleValue(admin: any): unknown {
-  const direct = firstValue(admin, ["role_name", "roleName", "role", "role_id", "roleId"]);
+function extractRoleValue(record: any, depth = 0): unknown {
+  if (!record || depth > 2) return undefined;
+  const direct = firstValue(record, ["role_name", "roleName", "role_id", "roleId"]);
   if (direct !== undefined) return direct;
-  return firstValue(admin?.role_master, ["role_name", "roleName", "name", "role_id", "roleId", "id"]);
+  const nested = firstValue(record, ["role_master", "roleMaster", "role", "roles", "permission", "access"]);
+  if (Array.isArray(nested)) {
+    for (const item of nested) {
+      const nestedValue = extractRoleValue(item, depth + 1);
+      if (nestedValue !== undefined) return nestedValue;
+    }
+  }
+  if (nested !== undefined && typeof nested !== "string" && typeof nested !== "number") {
+    return extractRoleValue(nested, depth + 1);
+  }
+  if (typeof nested === "string" || typeof nested === "number") return nested;
+  return undefined;
 }
 
 function extractRole(admin: any): Role | null {
@@ -82,10 +94,18 @@ function extractRole(admin: any): Role | null {
 }
 
 function extractAdmins(responseData: any): any[] {
-  const candidates = [responseData?.data, responseData?.admins, responseData?.users, responseData];
+  const candidates = [
+    responseData?.data,
+    responseData?.admins,
+    responseData?.users,
+    responseData?.payload,
+    responseData,
+  ];
   for (const candidate of candidates) {
     if (Array.isArray(candidate)) return candidate;
-    if (Array.isArray(candidate?.data)) return candidate.data;
+    for (const key of ["data", "admins", "users", "rows", "results", "items", "payload"]) {
+      if (Array.isArray(candidate?.[key])) return candidate[key];
+    }
   }
   return [];
 }
@@ -145,21 +165,27 @@ export function RoleProvider({ children }: { children: ReactNode }) {
       const currentMobile = normalizeDigits(getCurrentUserMobile());
       const currentName = (getCurrentUserName() || "").trim().toLowerCase();
 
-      const matchedAdmin = admins.find((admin: any) => {
-        const id = adminId(admin);
-        return currentId && id === currentId;
-      }) ?? admins.find((admin: any) => {
+      const sameMobile = (admin: any): boolean => {
         if (!currentMobile) return false;
         const adminMobileVal = adminMobile(admin);
-        if (!adminMobileVal) return false;
-        // Exact match, or suffix match to handle country-code differences
-        // e.g. user typed 9876543210, backend stores 919876543210
-        return adminMobileVal === currentMobile
+        return Boolean(adminMobileVal && (
+          adminMobileVal === currentMobile
           || adminMobileVal.endsWith(currentMobile)
-          || currentMobile.endsWith(adminMobileVal);
-      }) ?? admins.find((admin: any) =>
+          || currentMobile.endsWith(adminMobileVal)
+        ));
+      };
+      const sameId = (admin: any): boolean => Boolean(currentId && adminId(admin) === currentId);
+      const sameName = (admin: any): boolean => Boolean(
         currentName && String(admin?.name ?? "").trim().toLowerCase() === currentName
       );
+      const hasRole = (admin: any): boolean => extractRole(admin) !== null;
+
+      const matchedAdmin = admins.find((admin: any) => sameMobile(admin) && hasRole(admin))
+        ?? admins.find((admin: any) => sameId(admin) && hasRole(admin))
+        ?? admins.find((admin: any) => sameName(admin) && hasRole(admin))
+        ?? admins.find((admin: any) => sameMobile(admin))
+        ?? admins.find((admin: any) => sameId(admin))
+        ?? admins.find((admin: any) => sameName(admin));
 
       if (!matchedAdmin) {
         const message = "Could not identify the signed-in admin in the backend admin list.";
@@ -171,7 +197,9 @@ export function RoleProvider({ children }: { children: ReactNode }) {
 
       const resolvedRole = extractRole(matchedAdmin);
       if (!resolvedRole) {
-        const message = "The signed-in admin record has no role data.";
+        const adminKeys = Object.keys(matchedAdmin);
+        const roleMasterKeys = matchedAdmin.role_master ? Object.keys(matchedAdmin.role_master) : "no role_master";
+        const message = `No role data found on admin record. Admin keys: [${adminKeys.join(", ")}]. role_master keys: [${roleMasterKeys}].`;
         console.error(`[RoleProvider] ${message}`, matchedAdmin);
         setErrorMessage(message);
         setStatus("error");
