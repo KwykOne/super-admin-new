@@ -9,7 +9,24 @@ import { ShoppingBag } from "lucide-react";
 
 import { toast } from "sonner"
 import axios from "axios"
-import { setCurrentRole, setCurrentUserName } from "@/lib/roles";
+import { setCurrentRole, setCurrentUserName, setCurrentUserMobile } from "@/lib/roles";
+
+const getBaseURL = () => {
+  const stored = localStorage.getItem("persist:root");
+  let mode = "production";
+  try {
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (parsed.modal) {
+        const modal = typeof parsed.modal === "string" ? JSON.parse(parsed.modal) : parsed.modal;
+        mode = modal.mode || "production";
+      }
+    }
+  } catch {}
+  return mode === "dev"
+    ? import.meta.env.VITE_BACKEND_DEV_URL
+    : import.meta.env.VITE_BACKEND_PROD_URL;
+};
 
 
 const Login = () => {
@@ -17,7 +34,6 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const baseURL = import.meta.env.VITE_BACKEND_PROD_URL as string;
 
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -40,16 +56,19 @@ const Login = () => {
         localStorage.setItem("userToken",response.data.token)
 
         try {
-          const meRes = await axios.get(`${baseURL}api/v1/admin/get-superadmins`, {
+          const fetchBaseURL = getBaseURL();
+          const meRes = await axios.get(`${fetchBaseURL}api/v1/admin/get-superadmins`, {
             headers: { Authorization: `Bearer ${response.data.token}` },
           });
           const admins = meRes.data.data || [];
-          const me = admins.find((a: any) => a.mobile_no === number) || admins[0];
+          const me = admins.find((a: any) => String(a.mobile_no) === String(number)) || admins[0];
           const roleName = me?.role_master?.role_name || "Team";
           const userName = me?.name || "";
           setCurrentRole(roleName);
           setCurrentUserName(userName);
-        } catch {
+          setCurrentUserMobile(number);
+        } catch (err) {
+          console.error("Role fetch on login failed, defaulting to Team:", err);
           setCurrentRole("Team");
         }
 

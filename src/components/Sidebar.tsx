@@ -34,7 +34,7 @@ import { toast } from "sonner";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { toggleDashboard } from "@/features/todoSlice";
-import { getCurrentRole } from "@/lib/roles";
+import { useRoleSync } from "@/hooks/useRoleSync";
 
 type SidebarItem = {
   title: string;
@@ -73,7 +73,7 @@ export function Sidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
-  const role = getCurrentRole();
+  const role = useRoleSync();
   const isSuperAdminUser = role === "Super Admin";
 
   const handleLogout = () => {

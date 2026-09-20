@@ -36,6 +36,7 @@ export function isSuperAdmin(role: string | null | undefined): boolean {
 
 const CURRENT_ROLE_KEY = "userRole";
 const CURRENT_USER_KEY = "currentUser";
+const CURRENT_MOBILE_KEY = "currentUserMobile";
 
 export function getCurrentRole(): Role {
   const raw = localStorage.getItem(CURRENT_ROLE_KEY);
@@ -54,9 +55,18 @@ export function setCurrentUserName(name: string) {
   localStorage.setItem(CURRENT_USER_KEY, name);
 }
 
+export function getCurrentUserMobile(): string | null {
+  return localStorage.getItem(CURRENT_MOBILE_KEY);
+}
+
+export function setCurrentUserMobile(mobile: string) {
+  localStorage.setItem(CURRENT_MOBILE_KEY, mobile);
+}
+
 export function clearCurrentUser() {
   localStorage.removeItem(CURRENT_ROLE_KEY);
   localStorage.removeItem(CURRENT_USER_KEY);
+  localStorage.removeItem(CURRENT_MOBILE_KEY);
 }
 
 export const SUPER_ADMIN_API_ID = "3";
