@@ -236,7 +236,78 @@ reconstructed UI values. Available fields: `subscriptionRevenue`,
 - Do not request 200 or 500 rows in a single API call -- paginate instead
 - Page numbers are 1-based
 
-## 7. Endpoints confirmed insufficient for transaction-level data
+## 7. Roles and authorization
+
+### 7.1 Canonical roles
+
+There are exactly **two user-facing roles**:
+
+| Role | API role_id | Description |
+|---|---|---|
+| Super Admin | `"3"` | Full access to all areas including Settings, Revenue, Team |
+| Team | `"4"` | Standard access; cannot see Settings, Revenue, or Team |
+
+### 7.2 Role canonicalization
+
+The backend may return role names in various spellings. The frontend
+canonicalizes them in `src/lib/roles.ts`:
+
+- **Super Admin** spellings: `Super Admin`, `super_admin`, `SUPER_ADMIN`,
+  `superadmin`, `super-admin`, etc.
+- **Team** spellings: `Team`, `team`, `TEAM`, `team_member`, `TEAM_MEMBER`,
+  etc.
+- **Missing or unknown roles default to Team** for least privilege.
+
+### 7.3 How the role is read and persisted
+
+1. On login (`POST api/v1/admin/login`), the token is stored in
+   `localStorage.userToken`.
+2. Immediately after login, the app calls `GET api/v1/admin/get-superadmins`
+   to fetch the admin list, finds the current user by `mobile_no`, and stores
+   their `role_master.role_name` in `localStorage.userRole` (canonicalized)
+   and their name in `localStorage.currentUser`.
+3. All role checks throughout the app read from `localStorage.userRole` via
+   `getCurrentRole()` in `src/lib/roles.ts`.
+4. Role changes are persisted **only** through the existing team-member API
+   (`POST api/v1/admin/update-admin-role/{id}` with `{ role_id }`). Never
+   write directly to PostgreSQL/AWS. Never alter schema, tables, columns,
+   migrations, or seeds.
+
+### 7.4 Protected routes and UI elements
+
+The following are restricted to **Super Admin only**:
+
+| Protected item | Guard mechanism |
+|---|---|
+| `/settings` route | `SuperAdminRoute` wrapper in `App.tsx` |
+| `/revenue` route | `SuperAdminRoute` wrapper in `App.tsx` |
+| `/team` route | `SuperAdminRoute` wrapper in `App.tsx` |
+| Sidebar entries for Revenue, Team, Settings | Filtered out in `Sidebar.tsx` |
+| BharatGo Revenue stat card on Dashboard | Conditionally rendered in `Dashboard.tsx` |
+
+Team users who navigate directly to a protected URL are redirected to
+`/dashboard` with no protected content flash.
+
+### 7.5 Existing user role correction
+
+Existing team member roles should be corrected **only** through the
+`POST api/v1/admin/update-admin-role/{id}` API:
+
+- Every existing user should be **Team** except **Pravin Adik**, who should
+  be **Super Admin**.
+- This correction is performed from the Team page's per-member role actions
+  (Make Super Admin / Make Team in the actions dropdown).
+- **Never hardcode a user name as the authorization rule.** Pravin's Super
+  Admin status must come from the persisted role returned by the API, not
+  from a client-side name check.
+
+### 7.6 Team page role dropdown
+
+The Add New Team Member modal has exactly two role options: **Super Admin**
+and **Team**. The selected role's `role_id` is sent as `role_id` in the
+`POST api/v1/admin/register-superadmin` request body.
+
+## 8. Endpoints confirmed insufficient for transaction-level data
 
 These aggregate/analytics endpoints cannot produce per-transaction rows:
 

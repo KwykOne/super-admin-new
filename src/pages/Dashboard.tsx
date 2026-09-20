@@ -18,6 +18,7 @@ import { convertNumber } from "@/utils/dataUtils";
 import axios from "axios"
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
+import { getCurrentRole } from "@/lib/roles";
 
 // Mock data
 // const sellerStatusData = [
@@ -163,6 +164,7 @@ export default function Dashboard() {
   const [selectedPeriod, setSelectedPeriod] = useState<PeriodType>('today');
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
   const token = localStorage.getItem('userToken');
+  const isSuperAdminUser = getCurrentRole() === "Super Admin";
 
   
   const [dashboardData,      setDashboardData]      = useState({}) as any;
@@ -328,18 +330,20 @@ export default function Dashboard() {
           trend={periodData.gmvTrend}
           loading={loadingDashboard}
           variant="warning"
-          onClick={() => navigate('/revenue')}
+          onClick={() => navigate('/orders')}
         />
-        <StatCard
-          title="BharatGo Revenue"
-          value={convertNumber(dashboardData.revenueData)}
-          icon={<DollarSign size={22} />}
-          description="All revenue sources"
-          trend={dashboardData.revenueData}
-          loading={loadingDashboard}
-          variant="danger"
-          onClick={() => navigate('/revenue')}
-        />
+        {isSuperAdminUser && (
+          <StatCard
+            title="BharatGo Revenue"
+            value={convertNumber(dashboardData.revenueData)}
+            icon={<DollarSign size={22} />}
+            description="All revenue sources"
+            trend={dashboardData.revenueData}
+            loading={loadingDashboard}
+            variant="danger"
+            onClick={() => navigate('/revenue')}
+          />
+        )}
       </div>
 
       {/* --- Charts --- */}

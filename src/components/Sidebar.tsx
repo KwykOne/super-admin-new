@@ -34,6 +34,7 @@ import { toast } from "sonner";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { toggleDashboard } from "@/features/todoSlice";
+import { getCurrentRole } from "@/lib/roles";
 
 type SidebarItem = {
   title: string;
@@ -59,6 +60,12 @@ const bottomItems: SidebarItem[] = [
   { title: "Help", icon: HelpCircle, path: "/help" },
 ];
 
+const PROTECTED_PATHS = ["/revenue", "/team", "/settings"];
+
+function isProtectedPath(path: string): boolean {
+  return PROTECTED_PATHS.includes(path);
+}
+
 export function Sidebar() {
 
   const isCollapsed: any = useSelector((state:RootState) => state.modal.isSidebarCollapsed);
@@ -66,6 +73,8 @@ export function Sidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const role = getCurrentRole();
+  const isSuperAdminUser = role === "Super Admin";
 
   const handleLogout = () => {
     toast.success("Logged out successfully");
@@ -113,7 +122,7 @@ export function Sidebar() {
 
         {/* Main navigation */}
         <div className="flex-1 py-6 space-y-1 overflow-y-auto">
-          {mainItems.map((item) => (
+          {mainItems.filter(item => isSuperAdminUser || !isProtectedPath(item.path)).map((item) => (
             <NavItem
               key={item.title}
               item={item}
@@ -125,7 +134,7 @@ export function Sidebar() {
 
         {/* Bottom navigation */}
         <div className="py-6 space-y-1 border-t border-gray-200/15">
-          {bottomItems.map((item) => (
+          {bottomItems.filter(item => isSuperAdminUser || !isProtectedPath(item.path)).map((item) => (
             <NavItem
               key={item.title}
               item={item}
@@ -163,7 +172,7 @@ export function Sidebar() {
     <>
       {/* Bottom navigation for mobile */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200/15 flex justify-around py-2 z-50">
-        {mainItems.slice(0, 5).map((item) => (
+        {mainItems.slice(0, 5).filter(item => isSuperAdminUser || !isProtectedPath(item.path)).map((item) => (
           <NavLink
             key={item.title}
             to={item.path}
@@ -203,7 +212,7 @@ export function Sidebar() {
               
               <div className="space-y-4">
                 {/* Extra main items that didn't fit in bottom nav */}
-                {mainItems.slice(5).map((item) => (
+                {mainItems.slice(5).filter(item => isSuperAdminUser || !isProtectedPath(item.path)).map((item) => (
                   <NavLink
                     key={item.title}
                     to={item.path}
@@ -230,7 +239,7 @@ export function Sidebar() {
                 <div className="border-t border-gray-200/15 my-2"></div>
                 
                 {/* Bottom items */}
-                {bottomItems.map((item) => (
+                {bottomItems.filter(item => isSuperAdminUser || !isProtectedPath(item.path)).map((item) => (
                   <NavLink
                     key={item.title}
                     to={item.path}

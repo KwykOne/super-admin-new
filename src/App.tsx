@@ -25,6 +25,7 @@ import { Provider } from 'react-redux';
 import { store } from "./store";
 import Login from "./pages/Login";
 import Announcements from "./pages/Announcements";
+import { SuperAdminRoute } from "@/components/ProtectedRoute";
 
 // Create a new QueryClient instance
 const queryClient = new QueryClient({
@@ -52,15 +53,15 @@ const App = () => (
           <Route path="/sellers/:id" element={<SellerDetail />} />
           <Route path="/orders" element={<Orders />} />
           <Route path="/orders/:id" element={<OrderDetail />} />
-          <Route path="/revenue" element={<Revenue />} />
+          <Route path="/revenue" element={<SuperAdminRoute><Revenue /></SuperAdminRoute>} />
           <Route path="/settlements" element={<Settlements />} />
           <Route path="/referrals" element={<Referrals />} />
           <Route path="/referrals/:id" element={<ReferralDetail />} />
           <Route path="/referrals/:id/:storeName" element={<ReferalListDetails />} />
           <Route path="/partners" element={<Partners/>}/>
-          <Route path="/team" element={<Team />} />
+          <Route path="/team" element={<SuperAdminRoute><Team /></SuperAdminRoute>} />
           <Route path="/announcements" element={<Announcements />} />
-          <Route path="/settings" element={<Settings />} />
+          <Route path="/settings" element={<SuperAdminRoute><Settings /></SuperAdminRoute>} />
           <Route path="/help" element={<Help />} />
           <Route path="*" element={<NotFound />} />
         </Routes>

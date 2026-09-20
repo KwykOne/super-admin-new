@@ -5,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {toast} from 'sonner'
-import { 
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -13,10 +13,10 @@ import {
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Search, 
-  MoreHorizontal, 
-  UserPlus, 
+import {
+  Search,
+  MoreHorizontal,
+  UserPlus,
   Mail,
   ShieldCheck,
   ShieldAlert,
@@ -31,23 +31,19 @@ import useAdminData from "@/hooks/useSuperAdminData";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
 import axios from "axios";
-
-
+import { canonicalizeRole, SUPER_ADMIN_API_ID, TEAM_API_ID } from "@/lib/roles";
 
 const roles = [
-  { id: "3", name: "Super Admin", description: "Full access to all areas" },
-  // { id: "admin", name: "Admin", description: "Access to most areas except team management" },
-  // { id: "finance", name: "Finance Manager", description: "Access to dashboard and revenue only" },
-  // { id: "support", name: "Seller Support", description: "Access to seller and order management" },
-  // { id: "analyst", name: "Analyst", description: "Read-only access to analytics" },
+  { id: SUPER_ADMIN_API_ID, name: "Super Admin", description: "Full access to all areas" },
+  { id: TEAM_API_ID, name: "Team", description: "Standard team access" },
 ];
 
 export default function Team() {
   const token = localStorage.getItem('userToken')
   const mode = useSelector((state: RootState) => state.modal.mode);
 
-  const baseURL = mode === 'dev' 
-    ? import.meta.env.VITE_BACKEND_DEV_URL 
+  const baseURL = mode === 'dev'
+    ? import.meta.env.VITE_BACKEND_DEV_URL
     : import.meta.env.VITE_BACKEND_PROD_URL;
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -57,31 +53,30 @@ export default function Team() {
     name: "",
     number: "",
     password:"",
-    role:'3'
+    role: TEAM_API_ID
   });
-
-
 
   useEffect(() => {
     setLoading(!admins || admins.length === 0 && loading);
   }, [admins]);
 
-  const filteredMembers = (admins || []).filter(member => 
-    member.name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+  const filteredMembers = (admins || []).filter(member =>
+    member.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     member.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     member.role_master?.role_name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const handleAddMember = async () => {
-    const loadId = toast.loading("Creating Super Admin");
-  
+    const loadId = toast.loading("Creating team member");
+
     try {
-      const response = await axios.post(
+      await axios.post(
         `${baseURL}api/v1/admin/register-superadmin`,
         {
           name:newMember.name,
           mobile_no:newMember.number,
-          password:newMember.password
+          password:newMember.password,
+          role_id: newMember.role
         },
         {
           headers: {
@@ -90,22 +85,22 @@ export default function Team() {
         }
       );
 
-  
-      toast.success("Created Admin Successfully");
+      toast.success("Created team member successfully");
+      setShowAddMemberDialog(false);
+      setNewMember({ name: "", number: "", password: "", role: TEAM_API_ID });
     } catch (err) {
-      toast.error("Error creating Admin");
+      toast.error("Error creating team member");
       console.error("Error creating admin:", err);
     } finally {
       toast.dismiss(loadId);
     }
-  
   };
 
   const handleRemoveMember = async (id: number) => {
     const loadId = toast.loading("Deleting admin");
-  
+
     try {
-      const response = await axios.delete(
+      await axios.delete(
         `${baseURL}api/v1/admin/delete-admin/${id}`,
         {
           headers: {
@@ -113,7 +108,7 @@ export default function Team() {
           },
         }
       );
-  
+
       toast.success("Deleted Admin Successfully");
     } catch (err) {
       toast.error("Error Deleting Admin");
@@ -122,13 +117,12 @@ export default function Team() {
       toast.dismiss(loadId);
     }
   };
-  
 
   const toggleMemberStatus = async (id: number) => {
     const loadId = toast.loading("Updating Admin ....");
-  
+
     try {
-      const response = await axios.post(
+      await axios.post(
         `${baseURL}api/v1/admin/toggle-admin-status/${id}`,
         {},
         {
@@ -146,20 +140,28 @@ export default function Team() {
       toast.dismiss(loadId);
     }
   };
-  
-  
+
+  const handleUpdateRole = async (id: number, newRoleId: string) => {
+    const loadId = toast.loading("Updating role...");
+    try {
+      await axios.post(
+        `${baseURL}api/v1/admin/update-admin-role/${id}`,
+        { role_id: newRoleId },
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+      toast.success("Role updated successfully");
+    } catch (err) {
+      toast.error("Error updating role");
+      console.error("Error updating role:", err);
+    } finally {
+      toast.dismiss(loadId);
+    }
+  };
 
   const getRoleIcon = (role: string) => {
-    switch (role) {
-      case "SUPER_ADMIN":
-        return <ShieldAlert className="h-4 w-4 text-red-500" />;
-      case "Admin":
-        return <ShieldCheck className="h-4 w-4 text-blue-500" />;
-      case "Finance Manager":
-        return <UserCog className="h-4 w-4 text-amber-500" />;
-      default:
-        return <UserCog className="h-4 w-4 text-gray-500" />;
-    }
+    const canonical = canonicalizeRole(role);
+    if (canonical === "Super Admin") return <ShieldAlert className="h-4 w-4 text-red-500" />;
+    return <UserCog className="h-4 w-4 text-blue-500" />;
   };
 
   return (
@@ -230,8 +232,8 @@ export default function Team() {
                   <label htmlFor="role" className="text-right text-sm font-medium">
                     Role
                   </label>
-                  <Select 
-                    value={newMember.role} 
+                  <Select
+                    value={newMember.role}
                     onValueChange={(value) => setNewMember({...newMember, role: value})}
                   >
                     <SelectTrigger className="col-span-3">
@@ -309,17 +311,10 @@ export default function Team() {
                         <TableCell>
                           <div className="flex items-center gap-1">
                             {getRoleIcon(member.role_master?.role_name)}
-                            <span>{member.role_master?.role_name || 'NA'}</span>
+                            <span>{canonicalizeRole(member.role_master?.role_name)}</span>
                           </div>
                         </TableCell>
                         <TableCell>
-                          {/* <div className="flex flex-wrap gap-1">
-                            {member.access.map((item) => (
-                              <Badge key={item} variant="outline" className="text-xs">
-                                {item}
-                              </Badge>
-                            ))}
-                          </div> */}
                         </TableCell>
                         <TableCell>
                           <Badge variant={ member.is_active === 1 ? "default" : "secondary"} className="text-xs">
@@ -338,6 +333,14 @@ export default function Team() {
                               <DropdownMenuItem>
                                 <Edit className="mr-2 h-4 w-4" />
                                 <span>Edit Details</span>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleUpdateRole(member.id, SUPER_ADMIN_API_ID)}>
+                                <ShieldAlert className="mr-2 h-4 w-4" />
+                                <span>Make Super Admin</span>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleUpdateRole(member.id, TEAM_API_ID)}>
+                                <UserCog className="mr-2 h-4 w-4" />
+                                <span>Make Team</span>
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => toggleMemberStatus(member.id)}>
                                 <ShieldCheck className="mr-2 h-4 w-4" />

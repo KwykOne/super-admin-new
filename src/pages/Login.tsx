@@ -8,7 +8,8 @@ import { Label } from "@/components/ui/label";
 import { ShoppingBag } from "lucide-react";
 
 import { toast } from "sonner"
-import axios from "axios";
+import axios from "axios"
+import { setCurrentRole, setCurrentUserName } from "@/lib/roles";
 
 
 const Login = () => {
@@ -16,6 +17,7 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const baseURL = import.meta.env.VITE_BACKEND_PROD_URL as string;
 
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -36,6 +38,21 @@ const Login = () => {
         })
 
         localStorage.setItem("userToken",response.data.token)
+
+        try {
+          const meRes = await axios.get(`${baseURL}api/v1/admin/get-superadmins`, {
+            headers: { Authorization: `Bearer ${response.data.token}` },
+          });
+          const admins = meRes.data.data || [];
+          const me = admins.find((a: any) => a.mobile_no === number) || admins[0];
+          const roleName = me?.role_master?.role_name || "Team";
+          const userName = me?.name || "";
+          setCurrentRole(roleName);
+          setCurrentUserName(userName);
+        } catch {
+          setCurrentRole("Team");
+        }
+
         toast.success("Logged In successfully !! ")
         navigate("/dashboard")
         setIsLoading(false)
