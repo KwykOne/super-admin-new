@@ -143,21 +143,39 @@ export default function Team() {
 
   const handleUpdateRole = async (id: number, newRoleId: string) => {
     const loadId = toast.loading("Updating role...");
+    const body = { role_id: Number(newRoleId) };
+    const headers = { Authorization: `Bearer ${token}` };
     try {
-      const response = await axios.post(
-        `${baseURL}api/v1/admin/update-admin-role/${id}`,
-        { role_id: Number(newRoleId) },
-        { headers: { Authorization: `Bearer ${token}` } },
-      );
+      let response;
+      try {
+        response = await axios.post(
+          `${baseURL}api/v1/admin/update-admin-role/${id}`,
+          body,
+          { headers },
+        );
+      } catch (postErr: any) {
+        if (postErr.response?.status === 404) {
+          response = await axios.put(
+            `${baseURL}api/v1/admin/update-admin-role/${id}`,
+            body,
+            { headers },
+          );
+        } else {
+          throw postErr;
+        }
+      }
       if (response.status < 200 || response.status >= 300) {
         throw new Error(`Role update returned status ${response.status}`);
       }
       await refreshAdmins();
       toast.success("Role updated successfully");
     } catch (err: any) {
-      const message = err.response?.data?.message || err.response?.data?.error;
-      toast.error(message ? `Error updating role: ${message}` : "Error updating role");
-      console.error("Error updating role:", err.response?.data || err);
+      const status = err.response?.status ?? "network";
+      const data = err.response?.data;
+      const message = typeof data === "string" ? data : data?.message || data?.error || "";
+      const detail = message ? `${message}` : `HTTP ${status}`;
+      console.error("Error updating role:", { status, data, err });
+      toast.error(`Error updating role (${detail})`);
     } finally {
       toast.dismiss(loadId);
     }
