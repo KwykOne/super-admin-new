@@ -26,6 +26,7 @@ import { store } from "./store";
 import Login from "./pages/Login";
 import Announcements from "./pages/Announcements";
 import { SuperAdminRoute } from "@/components/ProtectedRoute";
+import { RoleProvider } from "@/components/RoleProvider";
 
 // Create a new QueryClient instance
 const queryClient = new QueryClient({
@@ -43,6 +44,7 @@ const App = () => (
     <QueryClientProvider client={queryClient}>
 
     <BrowserRouter>
+      <RoleProvider>
       <TooltipProvider>
         <Routes>
          
@@ -68,6 +70,7 @@ const App = () => (
         <Toaster />
     
       </TooltipProvider>
+      </RoleProvider>
     </BrowserRouter>
   </QueryClientProvider>
   </Provider>

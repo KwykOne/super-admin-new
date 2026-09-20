@@ -34,7 +34,7 @@ import { toast } from "sonner";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { toggleDashboard } from "@/features/todoSlice";
-import { useRoleSync } from "@/hooks/useRoleSync";
+import { useRole } from "@/components/RoleProvider";
 
 type SidebarItem = {
   title: string;
@@ -73,8 +73,12 @@ export function Sidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
-  const role = useRoleSync();
+  const { role, status } = useRole();
   const isSuperAdminUser = role === "Super Admin";
+
+  // While role is syncing, show all items so a Super Admin doesn't see
+  // a flash of Team-restricted UI. After sync, filter properly.
+  const showProtected = status === "loading" || isSuperAdminUser;
 
   const handleLogout = () => {
     toast.success("Logged out successfully");
@@ -122,7 +126,7 @@ export function Sidebar() {
 
         {/* Main navigation */}
         <div className="flex-1 py-6 space-y-1 overflow-y-auto">
-          {mainItems.filter(item => isSuperAdminUser || !isProtectedPath(item.path)).map((item) => (
+          {mainItems.filter(item => showProtected || !isProtectedPath(item.path)).map((item) => (
             <NavItem
               key={item.title}
               item={item}
@@ -172,7 +176,7 @@ export function Sidebar() {
     <>
       {/* Bottom navigation for mobile */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200/15 flex justify-around py-2 z-50">
-        {mainItems.slice(0, 5).filter(item => isSuperAdminUser || !isProtectedPath(item.path)).map((item) => (
+        {mainItems.slice(0, 5).filter(item => showProtected || !isProtectedPath(item.path)).map((item) => (
           <NavLink
             key={item.title}
             to={item.path}
@@ -212,7 +216,7 @@ export function Sidebar() {
               
               <div className="space-y-4">
                 {/* Extra main items that didn't fit in bottom nav */}
-                {mainItems.slice(5).filter(item => isSuperAdminUser || !isProtectedPath(item.path)).map((item) => (
+                {mainItems.slice(5).filter(item => showProtected || !isProtectedPath(item.path)).map((item) => (
                   <NavLink
                     key={item.title}
                     to={item.path}
@@ -239,7 +243,7 @@ export function Sidebar() {
                 <div className="border-t border-gray-200/15 my-2"></div>
                 
                 {/* Bottom items */}
-                {bottomItems.filter(item => isSuperAdminUser || !isProtectedPath(item.path)).map((item) => (
+                {bottomItems.filter(item => showProtected || !isProtectedPath(item.path)).map((item) => (
                   <NavLink
                     key={item.title}
                     to={item.path}

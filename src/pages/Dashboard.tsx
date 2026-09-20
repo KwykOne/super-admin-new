@@ -18,7 +18,7 @@ import { convertNumber } from "@/utils/dataUtils";
 import axios from "axios"
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
-import { useRoleSync } from "@/hooks/useRoleSync";
+import { useRole } from "@/components/RoleProvider";
 
 // Mock data
 // const sellerStatusData = [
@@ -164,8 +164,8 @@ export default function Dashboard() {
   const [selectedPeriod, setSelectedPeriod] = useState<PeriodType>('today');
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
   const token = localStorage.getItem('userToken');
-  const currentRole = useRoleSync();
-  const isSuperAdminUser = currentRole === "Super Admin";
+  const { role: currentRole, status: roleStatus } = useRole();
+  const isSuperAdminUser = currentRole === "Super Admin" || roleStatus === "loading";
 
   
   const [dashboardData,      setDashboardData]      = useState({}) as any;

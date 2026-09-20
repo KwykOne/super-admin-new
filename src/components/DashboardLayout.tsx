@@ -15,6 +15,7 @@ import { RootState } from "@/store";
 import { changeDataType, setDevMode, setProdMode } from "@/features/todoSlice";
 import { Link } from "react-router-dom";
 import { Switch } from "./ui/switch";
+import { useRole } from "@/components/RoleProvider";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -44,6 +45,7 @@ export function DashboardLayout({ children, title, subtitle, action, backLink, w
   // }, [storeType]);
 
   const isCollapsed: any = useSelector((state:RootState) => state.modal.isSidebarCollapsed);
+  const { role, status } = useRole();
 
   return (
     <div className="flex min-h-screen w-full min-w-0 bg-gray-50 overflow-x-hidden">
@@ -80,8 +82,8 @@ export function DashboardLayout({ children, title, subtitle, action, backLink, w
               </div>
 
               <StoreTypeTabs value={storeType} onValueChange={changeDataType} />
-              <Badge variant="outline">
-                Super Admin
+              <Badge variant="outline" className={status === "loading" ? "opacity-50" : ""}>
+                {role}
               </Badge>
             </div>
           </div>

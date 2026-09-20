@@ -7,9 +7,8 @@ const SUPER_ADMIN_SPELLINGS = new Set([
   "super-admin",
   "super_admin_role",
   "super admin role",
-  "SUPER_ADMIN",
-  "SUPER ADMIN",
-  "SUPER-ADMIN",
+  "super admin role",
+  "super-admin role",
 ]);
 
 const TEAM_SPELLINGS = new Set([
@@ -17,20 +16,42 @@ const TEAM_SPELLINGS = new Set([
   "team_member",
   "team member",
   "team-member",
-  "TEAM",
-  "TEAM_MEMBER",
-  "TEAM MEMBER",
+  "team role",
 ]);
 
-export function canonicalizeRole(raw: string | null | undefined): Role {
-  if (!raw) return "Team";
-  const normalized = raw.trim();
-  if (SUPER_ADMIN_SPELLINGS.has(normalized.toLowerCase())) return "Super Admin";
-  if (TEAM_SPELLINGS.has(normalized.toLowerCase())) return "Team";
+/**
+ * Canonicalizes a role string or role id to "Super Admin" or "Team".
+ *
+ * Accepts:
+ * - role_master.role_name values: "Super Admin", "super_admin", "SUPER ADMIN", etc.
+ * - role id strings/numbers: "3" → Super Admin, "4" → Team
+ * - null/undefined/unknown → Team (least privilege)
+ */
+export function canonicalizeRole(raw: string | number | null | undefined): Role {
+  if (raw === null || raw === undefined) return "Team";
+
+  const s = String(raw).trim();
+  if (s === "") return "Team";
+
+  // Role ID matching
+  if (s === "3") return "Super Admin";
+  if (s === "4") return "Team";
+
+  const lower = s.toLowerCase();
+  if (SUPER_ADMIN_SPELLINGS.has(lower)) return "Super Admin";
+  if (TEAM_SPELLINGS.has(lower)) return "Team";
+
+  // Partial match for super admin variants
+  if (lower.includes("super") && lower.includes("admin")) return "Super Admin";
+
+  // Partial match for team variants
+  if (lower === "team" || lower.startsWith("team")) return "Team";
+
+  // Unknown → least privilege
   return "Team";
 }
 
-export function isSuperAdmin(role: string | null | undefined): boolean {
+export function isSuperAdmin(role: string | number | null | undefined): boolean {
   return canonicalizeRole(role) === "Super Admin";
 }
 
@@ -43,7 +64,7 @@ export function getCurrentRole(): Role {
   return canonicalizeRole(raw);
 }
 
-export function setCurrentRole(role: string) {
+export function setCurrentRole(role: string | number) {
   localStorage.setItem(CURRENT_ROLE_KEY, canonicalizeRole(role));
 }
 
