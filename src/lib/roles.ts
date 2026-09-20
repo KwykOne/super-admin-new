@@ -1,5 +1,7 @@
 export type Role = "Super Admin" | "Team";
 
+const VERIFIED_ROLE_KEY = "verifiedUserRole";
+
 export function canonicalizeRole(raw: string | number | null | undefined): Role {
   if (raw === null || raw === undefined) return "Team";
   const value = String(raw).trim();
@@ -25,8 +27,15 @@ export function getCurrentRole(): Role {
   return canonicalizeRole(localStorage.getItem(CURRENT_ROLE_KEY));
 }
 
+export function getVerifiedRole(): Role | null {
+  const raw = localStorage.getItem(VERIFIED_ROLE_KEY);
+  return raw ? canonicalizeRole(raw) : null;
+}
+
 export function setCurrentRole(role: string | number): void {
-  localStorage.setItem(CURRENT_ROLE_KEY, canonicalizeRole(role));
+  const canonicalRole = canonicalizeRole(role);
+  localStorage.setItem(CURRENT_ROLE_KEY, canonicalRole);
+  localStorage.setItem(VERIFIED_ROLE_KEY, canonicalRole);
 }
 
 export function getCurrentUserName(): string | null {
@@ -55,6 +64,7 @@ export function setCurrentUserId(id: string | number): void {
 
 export function clearCurrentUser(): void {
   localStorage.removeItem(CURRENT_ROLE_KEY);
+  localStorage.removeItem(VERIFIED_ROLE_KEY);
   localStorage.removeItem(CURRENT_USER_KEY);
   localStorage.removeItem(CURRENT_MOBILE_KEY);
   localStorage.removeItem(CURRENT_USER_ID_KEY);

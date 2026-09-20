@@ -11,34 +11,36 @@ import { RootState } from "@/store";
 import axios from "axios";
 import {
   canonicalizeRole,
-  getCurrentRole,
-  setCurrentRole,
   getCurrentUserId,
-  setCurrentUserId,
-  getCurrentUserName,
-  setCurrentUserName,
   getCurrentUserMobile,
+  getCurrentUserName,
+  getVerifiedRole,
+  setCurrentRole,
+  setCurrentUserId,
   setCurrentUserMobile,
+  setCurrentUserName,
   type Role,
 } from "@/lib/roles";
 
 type RoleStatus = "loading" | "synced" | "error";
 
 interface RoleContextValue {
-  role: Role;
+  role: Role | null;
   status: RoleStatus;
   userName: string | null;
   isAuthenticated: boolean;
   isSuperAdmin: boolean;
+  errorMessage: string | null;
   refreshRole: () => Promise<void>;
 }
 
 const RoleContext = createContext<RoleContextValue>({
-  role: "Team",
+  role: null,
   status: "loading",
   userName: null,
   isAuthenticated: false,
   isSuperAdmin: false,
+  errorMessage: null,
   refreshRole: async () => {},
 });
 
@@ -52,9 +54,8 @@ function normalizeDigits(value: unknown): string {
 
 function firstValue(record: any, keys: string[]): unknown {
   for (const key of keys) {
-    if (record?.[key] !== undefined && record?.[key] !== null && record[key] !== "") {
-      return record[key];
-    }
+    const value = record?.[key];
+    if (value !== undefined && value !== null && value !== "") return value;
   }
   return undefined;
 }
@@ -64,47 +65,73 @@ function adminId(admin: any): string {
 }
 
 function adminMobile(admin: any): string {
-  return normalizeDigits(
-    firstValue(admin, ["mobile_no", "mobileNo", "mobile", "phone", "phone_no", "phoneNumber"])
-  );
+  return normalizeDigits(firstValue(admin, [
+    "mobile_no", "mobileNo", "mobile", "phone", "phone_no", "phoneNumber",
+  ]));
 }
 
 function extractRoleValue(admin: any): unknown {
-  return firstValue(admin, ["role_name", "roleName", "role", "role_id", "roleId"]) ??
-    firstValue(admin?.role_master, ["role_name", "roleName", "name", "role_id", "roleId", "id"]);
+  const direct = firstValue(admin, ["role_name", "roleName", "role", "role_id", "roleId"]);
+  if (direct !== undefined) return direct;
+  return firstValue(admin?.role_master, ["role_name", "roleName", "name", "role_id", "roleId", "id"]);
 }
 
 function extractRole(admin: any): Role | null {
   const value = extractRoleValue(admin);
-  if (value === undefined) return null;
-  return canonicalizeRole(value as string | number);
+  return value === undefined ? null : canonicalizeRole(value as string | number);
 }
 
-function getLoginIdentity(response: any): { id: string; mobile: string } {
-  const source = response?.user ?? response?.admin ?? response?.data ?? response;
-  return {
-    id: String(firstValue(source, ["id", "admin_id", "adminId", "user_id", "userId"]) ?? ""),
-    mobile: normalizeDigits(
-      firstValue(source, ["mobile_no", "mobileNo", "mobile", "phone", "phone_no", "phoneNumber"])
-    ),
-  };
+function extractAdmins(responseData: any): any[] {
+  const candidates = [responseData?.data, responseData?.admins, responseData?.users, responseData];
+  for (const candidate of candidates) {
+    if (Array.isArray(candidate)) return candidate;
+    if (Array.isArray(candidate?.data)) return candidate.data;
+  }
+  return [];
+}
+
+function decodeTokenIdentity(token: string): { id: string; mobile: string } {
+  try {
+    const payload = token.split(".")[1];
+    if (!payload) return { id: "", mobile: "" };
+    const decoded = JSON.parse(atob(payload.replace(/-/g, "+").replace(/_/g, "/")));
+    return {
+      id: String(firstValue(decoded, ["id", "admin_id", "adminId", "user_id", "userId", "sub"]) ?? ""),
+      mobile: normalizeDigits(firstValue(decoded, ["mobile_no", "mobileNo", "mobile", "phone", "phoneNumber"])),
+    };
+  } catch {
+    return { id: "", mobile: "" };
+  }
+}
+
+function hydrateIdentityFromToken(token: string): void {
+  const identity = decodeTokenIdentity(token);
+  if (identity.id && !getCurrentUserId()) setCurrentUserId(identity.id);
+  if (identity.mobile && !getCurrentUserMobile()) setCurrentUserMobile(identity.mobile);
 }
 
 export function RoleProvider({ children }: { children: ReactNode }) {
-  const [role, setRole] = useState<Role>(() => getCurrentRole());
+  const verifiedRole = getVerifiedRole();
+  const [role, setRole] = useState<Role | null>(verifiedRole === "Super Admin" ? verifiedRole : null);
   const [status, setStatus] = useState<RoleStatus>("loading");
   const [userName, setUserName] = useState<string | null>(() => getCurrentUserName());
-  const [tokenVersion, setTokenVersion] = useState(0);
+  const [sessionVersion, setSessionVersion] = useState(0);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const mode = useSelector((state: RootState) => state.modal.mode);
 
   const refreshRole = useCallback(async () => {
     const token = localStorage.getItem("userToken");
     if (!token) {
+      setRole(null);
       setStatus("synced");
+      setErrorMessage(null);
       return;
     }
 
+    hydrateIdentityFromToken(token);
     setStatus("loading");
+    setErrorMessage(null);
+
     const baseURL = mode === "dev"
       ? import.meta.env.VITE_BACKEND_DEV_URL
       : import.meta.env.VITE_BACKEND_PROD_URL;
@@ -113,28 +140,40 @@ export function RoleProvider({ children }: { children: ReactNode }) {
       const response = await axios.get(`${baseURL}api/v1/admin/get-superadmins`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      const admins = Array.isArray(response.data?.data) ? response.data.data : [];
+      const admins = extractAdmins(response.data);
       const currentId = getCurrentUserId();
       const currentMobile = normalizeDigits(getCurrentUserMobile());
       const currentName = (getCurrentUserName() || "").trim().toLowerCase();
 
       const matchedAdmin = admins.find((admin: any) => {
         const id = adminId(admin);
-        const mobile = adminMobile(admin);
-        return (currentId && id === currentId) || (currentMobile && mobile === currentMobile);
+        return currentId && id === currentId;
+      }) ?? admins.find((admin: any) => {
+        if (!currentMobile) return false;
+        const adminMobileVal = adminMobile(admin);
+        if (!adminMobileVal) return false;
+        // Exact match, or suffix match to handle country-code differences
+        // e.g. user typed 9876543210, backend stores 919876543210
+        return adminMobileVal === currentMobile
+          || adminMobileVal.endsWith(currentMobile)
+          || currentMobile.endsWith(adminMobileVal);
       }) ?? admins.find((admin: any) =>
         currentName && String(admin?.name ?? "").trim().toLowerCase() === currentName
       );
 
       if (!matchedAdmin) {
-        console.error("[RoleProvider] Could not identify the authenticated admin in get-superadmins.");
+        const message = "Could not identify the signed-in admin in the backend admin list.";
+        console.error(`[RoleProvider] ${message}`, { currentId, currentMobile, adminCount: admins.length });
+        setErrorMessage(message);
         setStatus("error");
         return;
       }
 
       const resolvedRole = extractRole(matchedAdmin);
       if (!resolvedRole) {
-        console.error("[RoleProvider] Authenticated admin record has no role data.", matchedAdmin);
+        const message = "The signed-in admin record has no role data.";
+        console.error(`[RoleProvider] ${message}`, matchedAdmin);
+        setErrorMessage(message);
         setStatus("error");
         return;
       }
@@ -142,6 +181,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
       setRole(resolvedRole);
       setCurrentRole(resolvedRole);
       setStatus("synced");
+      setErrorMessage(null);
 
       const id = adminId(matchedAdmin);
       const mobile = adminMobile(matchedAdmin);
@@ -152,20 +192,22 @@ export function RoleProvider({ children }: { children: ReactNode }) {
         setUserName(String(matchedAdmin.name));
       }
     } catch (error) {
-      console.error("[RoleProvider] Role sync failed:", error);
+      const message = "Role verification failed. Check the backend response and try again.";
+      console.error(`[RoleProvider] ${message}`, error);
+      setErrorMessage(message);
       setStatus("error");
     }
   }, [mode]);
 
   useEffect(() => {
-    const handleSessionChanged = () => setTokenVersion((value) => value + 1);
+    const handleSessionChanged = () => setSessionVersion((value) => value + 1);
     window.addEventListener("bharatgo-auth-changed", handleSessionChanged);
     return () => window.removeEventListener("bharatgo-auth-changed", handleSessionChanged);
   }, []);
 
   useEffect(() => {
     void refreshRole();
-  }, [refreshRole, tokenVersion]);
+  }, [refreshRole, sessionVersion]);
 
   const isAuthenticated = Boolean(localStorage.getItem("userToken"));
   return (
@@ -175,6 +217,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
       userName,
       isAuthenticated,
       isSuperAdmin: role === "Super Admin",
+      errorMessage,
       refreshRole,
     }}>
       {children}
@@ -183,7 +226,9 @@ export function RoleProvider({ children }: { children: ReactNode }) {
 }
 
 export function storeLoginIdentity(response: any, mobile: string): void {
-  const identity = getLoginIdentity(response);
-  if (identity.id) setCurrentUserId(identity.id);
-  setCurrentUserMobile(identity.mobile || normalizeDigits(mobile));
+  const source = response?.user ?? response?.admin ?? response?.data ?? response;
+  const id = firstValue(source, ["id", "admin_id", "adminId", "user_id", "userId"]);
+  const responseMobile = firstValue(source, ["mobile_no", "mobileNo", "mobile", "phone", "phone_no", "phoneNumber"]);
+  if (id !== undefined) setCurrentUserId(String(id));
+  setCurrentUserMobile(normalizeDigits(responseMobile ?? mobile));
 }

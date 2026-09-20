@@ -45,7 +45,7 @@ export function DashboardLayout({ children, title, subtitle, action, backLink, w
   // }, [storeType]);
 
   const isCollapsed: any = useSelector((state:RootState) => state.modal.isSidebarCollapsed);
-  const { role, status } = useRole();
+  const { role, status, errorMessage, refreshRole } = useRole();
   const isSuperAdminUser = role === "Super Admin" || status === "loading" || status === "error";
 
   return (
@@ -83,9 +83,19 @@ export function DashboardLayout({ children, title, subtitle, action, backLink, w
               </div>
 
               <StoreTypeTabs value={storeType} onValueChange={changeDataType} />
-              <Badge variant="outline" className={status === "loading" ? "opacity-50 animate-pulse" : ""}>
-                {status === "loading" ? "Syncing…" : role}
-              </Badge>
+              {status === "error" ? (
+                <button
+                  type="button"
+                  onClick={() => void refreshRole()}
+                  className="inline-flex items-center gap-1 rounded-md border border-red-300 bg-red-50 px-2.5 py-1 text-xs font-medium text-red-700 hover:bg-red-100"
+                >
+                  Role sync failed — Retry
+                </button>
+              ) : (
+                <Badge variant="outline" className={status === "loading" ? "opacity-50 animate-pulse" : ""}>
+                  {status === "loading" ? "Syncing…" : role}
+                </Badge>
+              )}
             </div>
           </div>
         </header>

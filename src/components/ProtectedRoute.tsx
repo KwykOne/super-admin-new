@@ -5,24 +5,32 @@ interface ProtectedRouteProps {
   children: React.ReactNode;
 }
 
-function LoadingShell() {
+function RoleVerificationState({ errorMessage, onRetry }: { errorMessage: string | null; onRetry: () => void }) {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50">
-      <div className="flex flex-col items-center gap-3">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-blue-600" />
-        <p className="text-sm text-gray-500">Verifying access…</p>
+    <div className="flex min-h-screen items-center justify-center bg-gray-50 p-6">
+      <div className="w-full max-w-md rounded-lg border bg-white p-6 text-center shadow-sm">
+        <h1 className="text-lg font-semibold text-gray-900">Verifying access</h1>
+        <p className="mt-2 text-sm text-gray-600">
+          {errorMessage || "Checking your backend admin role…"}
+        </p>
+        <button
+          type="button"
+          onClick={onRetry}
+          className="mt-4 rounded-md bg-bharatgo-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90"
+        >
+          Retry verification
+        </button>
       </div>
     </div>
   );
 }
 
 export function SuperAdminRoute({ children }: ProtectedRouteProps) {
-  const { role, status } = useRole();
+  const { role, status, errorMessage, refreshRole } = useRole();
 
-  // While the role is being synced or errored, do NOT redirect.
-  // A Super Admin must never be bounced before their role is confirmed.
-  if (status === "loading") return <LoadingShell />;
-  if (status === "error") return <LoadingShell />;
+  if (status === "loading" || status === "error") {
+    return <RoleVerificationState errorMessage={errorMessage} onRetry={() => void refreshRole()} />;
+  }
 
   if (role !== "Super Admin") return <Navigate to="/dashboard" replace />;
   return <>{children}</>;
