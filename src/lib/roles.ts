@@ -6,7 +6,7 @@ export function canonicalizeRole(raw: string | number | null | undefined): Role 
   if (raw === null || raw === undefined) return "Team";
   const value = String(raw).trim();
   if (value === "3") return "Super Admin";
-  if (value === "4") return "Team";
+  if (value === "6") return "Team";
   const normalized = value.toLowerCase().replace(/[-_]+/g, " ").replace(/\s+/g, " ").trim();
   if (normalized === "super admin" || normalized === "superadmin" || normalized.includes("super admin")) {
     return "Super Admin";
@@ -71,7 +71,7 @@ export function clearCurrentUser(): void {
 }
 
 export const SUPER_ADMIN_API_ID = "3";
-export const TEAM_API_ID = "4";
+export const TEAM_API_ID = "6";
 
 export function roleToApiId(role: Role): string {
   return role === "Super Admin" ? SUPER_ADMIN_API_ID : TEAM_API_ID;

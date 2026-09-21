@@ -2,6 +2,14 @@
 
 > Verified findings about the BharatGo super-admin dashboard. This file is
 > documentation only -- no database, no schema changes, no migrations.
+>
+> **Primary source for Super Admin auth, admin/team APIs, role IDs, and
+> original Revenue implementation:** the original Super Admin repository at
+> https://github.com/Bharat-Go/super-admin-dashboard-bg, especially the
+> active master branch.
+>
+> The separate BharatGo/docs repository documents the seller platform and
+> main data source only; it is **not** the Super Admin auth/UI source.
 
 ## 1. Environment base URLs
 
@@ -16,6 +24,11 @@ stored in Redux (`state.modal.mode`). When `mode === "dev"`, the app uses
 
 Every authenticated request includes
 `Authorization: Bearer <token from localStorage userToken>`.
+
+**Production/Development environment mode is separate from All/Actual/Test
+store filtering.** AWS PostgreSQL and BharatGo APIs remain the source of
+truth. Do not use Bolt Database/Supabase, direct PostgreSQL access,
+migrations, seeders, schema sync, or any table/column changes.
 
 ## 2. All / Actual / Test store filter
 
@@ -236,18 +249,57 @@ reconstructed UI values. Available fields: `subscriptionRevenue`,
 - Do not request 200 or 500 rows in a single API call -- paginate instead
 - Page numbers are 1-based
 
-## 7. Roles and authorization
+## 7. Authentication, roles, and authorization
 
-### 7.1 Canonical roles
+> Verified against the original Super Admin repository master branch:
+> https://github.com/Bharat-Go/super-admin-dashboard-bg
 
-There are exactly **two user-facing roles**:
+### 7.1 Login
+
+```
+POST {baseURL}api/v1/admin/login
+```
+
+- **Body:** `{ mobile_no: string, password: string }`
+- **Success response:** `{ token: string, admin: {...} }`
+- The original master `Login.tsx` persists **both**:
+  - `response.data.token` as `localStorage.userToken`
+  - `response.data.admin` as the admin profile (contains `id`, `name`,
+    `mobile_no`, `admin_role_id`, and `role_name`/`roleMaster`)
+- **Do not derive the logged-in role from `admins[0]`, a hardcoded user
+  name, stale localStorage, or a Team fallback.** The authenticated user's
+  own persisted admin record is the role source.
+
+### 7.2 Admin list
+
+```
+GET {baseURL}api/v1/admin/get-superadmins
+```
+
+- **Headers:** `Authorization: Bearer <token>`
+- **Response:** `{ data: [{ id, name, mobile_no, admin_role_id, role_master: { role_name, ... }, ... }] }`
+- Read the authenticated user's own persisted admin record and its
+  `admin_role_id` / `role_name` (including the `role_master`/`roleMaster`
+  shape used by the original code).
+- If the user cannot be matched or role data is missing, treat it as an
+  **authentication/role-sync error or loading state**; never silently
+  assign Team.
+
+### 7.3 Verified role IDs
+
+From the original master source:
 
 | Role | API role_id | Description |
 |---|---|---|
-| Super Admin | `"3"` | Full access to all areas including Settings, Revenue, Team |
-| Team | `"4"` | Standard access; cannot see Settings, Revenue, or Team |
+| Super Admin | `3` | Full access to all areas including Settings, Revenue, Team |
+| Team | `6` | Standard access; cannot see Settings, Revenue, or Team |
 
-### 7.2 Role canonicalization
+**The current Bolt code must not treat `4` as the Team API ID.** The
+verified Team role_id is `6`. Canonical UI labels are exactly "Super Admin"
+and "Team". Unknown/missing values must not be treated as proof of Team
+for the current authenticated user.
+
+### 7.4 Role canonicalization
 
 The backend may return role names in various spellings. The frontend
 canonicalizes them in `src/lib/roles.ts`:
@@ -256,26 +308,28 @@ canonicalizes them in `src/lib/roles.ts`:
   `superadmin`, `super-admin`, etc.
 - **Team** spellings: `Team`, `team`, `TEAM`, `team_member`, `TEAM_MEMBER`,
   etc.
-- **Missing or unknown roles default to Team** for least privilege.
+- **Missing or unknown roles** must not be treated as proof of Team for
+  the current authenticated user. For least-privilege defaults on
+  *non-authenticated* contexts, Team may be used, but the authenticated
+  user's role must come from their persisted admin record.
 
-### 7.3 How the role is read and persisted
+### 7.5 How the role is read and persisted
 
 1. On login (`POST api/v1/admin/login`), the token is stored in
-   `localStorage.userToken`.
+   `localStorage.userToken` and the admin profile is persisted from
+   `response.data.admin`.
 2. Immediately after login, the app calls `GET api/v1/admin/get-superadmins`
-   to fetch the admin list, finds the current user by `mobile_no`, and stores
-   their `role_master.role_name` in `localStorage.userRole` (canonicalized)
-   and their name in `localStorage.currentUser`.
+   to fetch the admin list, finds the current user by `mobile_no` or `id`,
+   and stores their `role_master.role_name` in `localStorage.userRole`
+   (canonicalized) and their name in `localStorage.currentUser`.
 3. All role checks throughout the app read from `localStorage.userRole` via
    `getCurrentRole()` in `src/lib/roles.ts`.
-4. Role changes are persisted **only** through the existing team-member API
-   (`POST api/v1/admin/update-admin-role/{id}` with `{ role_id }`). Never
-   write directly to PostgreSQL/AWS. Never alter schema, tables, columns,
-   migrations, or seeds.
+4. **One shared role source** must drive the badge, sidebar, dashboard
+   BharatGo Revenue card, and route guards.
 
-### 7.4 Protected routes and UI elements
+### 7.6 Protected routes and UI elements
 
-The following are restricted to **Super Admin only**:
+The following are restricted to **Super Admin only** (role_id `3`):
 
 | Protected item | Guard mechanism |
 |---|---|
@@ -285,29 +339,52 @@ The following are restricted to **Super Admin only**:
 | Sidebar entries for Revenue, Team, Settings | Filtered out in `Sidebar.tsx` |
 | BharatGo Revenue stat card on Dashboard | Conditionally rendered in `Dashboard.tsx` |
 
-Team users who navigate directly to a protected URL are redirected to
-`/dashboard` with no protected content flash.
+Only explicit persisted role `3` / Super Admin may access Team, Revenue,
+and Settings. Team users must not see or access them. Team users who
+navigate directly to a protected URL are redirected to `/dashboard` with
+no protected content flash.
 
-### 7.5 Existing user role correction
+**Pravin Adik must be Super Admin because his persisted backend admin
+record says so, not because of a name-based hardcode.** Never hardcode a
+user name as the authorization rule.
 
-Existing team member roles should be corrected **only** through the
-`POST api/v1/admin/update-admin-role/{id}` API:
+## 8. Verified admin/team endpoints
 
-- Every existing user should be **Team** except **Pravin Adik**, who should
-  be **Super Admin**.
-- This correction is performed from the Team page's per-member role actions
-  (Make Super Admin / Make Team in the actions dropdown).
-- **Never hardcode a user name as the authorization rule.** Pravin's Super
-  Admin status must come from the persisted role returned by the API, not
-  from a client-side name check.
+> Verified from the original Super Admin repository master branch.
 
-### 7.6 Team page role dropdown
+| Method | Endpoint | Purpose |
+|---|---|---|
+| `POST` | `api/v1/admin/login` | Authenticate; returns token + admin profile |
+| `GET` | `api/v1/admin/get-superadmins` | List all admin/team members |
+| `POST` | `api/v1/admin/register-superadmin` | Create a new admin/team member |
+| `PATCH` | `api/v1/admin/team/:id` | Edit an existing member's details |
+| `POST` | `api/v1/admin/toggle-admin-status/:id` | Toggle active/inactive status |
+| `DELETE` | `api/v1/admin/delete-admin/:id` | Remove an admin/team member |
 
-The Add New Team Member modal has exactly two role options: **Super Admin**
-and **Team**. The selected role's `role_id` is sent as `role_id` in the
-`POST api/v1/admin/register-superadmin` request body.
+All require `Authorization: Bearer <token>`.
 
-## 8. Endpoints confirmed insufficient for transaction-level data
+### 8.1 Role-update endpoint: NOT VERIFIED -- external blocker
+
+**The original source does not prove a role-update endpoint.** The
+previously-documented `POST api/v1/admin/update-admin-role/{id}` has been
+removed from the contract because it returns 404 / "page not found" on
+both dev and prod. All speculative probing (`update-role`, `change-role`,
+`assign-role`, `admin/:id/role`, etc.) has also returned 404 and must not
+be used.
+
+**If the backend has no verified existing role-update API, Bolt cannot
+safely change existing roles from the frontend.** The app must report this
+exact external blocker rather than inventing endpoint paths or altering
+AWS PostgreSQL. The role dropdown may show the two roles, but persistence
+of role changes requires a confirmed backend contract. Do not perform a
+one-time role correction unless a real endpoint is verified and succeeds.
+
+The `PATCH api/v1/admin/team/:id` endpoint is verified for editing member
+details (name, mobile_no, etc.) but has **not been confirmed** to accept
+`role_id` / `admin_role_id` updates. Until this is confirmed, role changes
+are blocked by the missing backend contract.
+
+## 9. Endpoints confirmed insufficient for transaction-level data
 
 These aggregate/analytics endpoints cannot produce per-transaction rows:
 

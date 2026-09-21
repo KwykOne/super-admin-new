@@ -182,13 +182,26 @@
 
 ## Team
 
+> Verified against original Super Admin repository master branch:
+> https://github.com/Bharat-Go/super-admin-dashboard-bg
+
+### POST `api/v1/admin/login`
+- **Body:** `{ mobile_no: string, password: string }`
+- **Success:** `{ token: string, admin: { id, name, mobile_no, admin_role_id, role_name, role_master } }`
+- **Used by:** Login page — persists both `token` as `userToken` and `admin` as the admin profile
+
 ### GET `api/v1/admin/get-superadmins`
 - **Headers:** `Authorization: Bearer <token>`
-- **Used by:** Team page — via `useSuperAdminData` hook
+- **Used by:** Team page — via `useSuperAdminData` hook; also used by `RoleProvider` to verify the current user's role
 
 ### POST `api/v1/admin/register-superadmin`
-- **Body:** `{ name, mobile_no, password }`
+- **Body:** `{ name, mobile_no, password, role_id }`
 - **Used by:** Team page — add member
+
+### PATCH `api/v1/admin/team/{id}`
+- **Body:** member detail fields (name, mobile_no, etc.)
+- **Used by:** Team page — edit member details
+- **Note:** Has **not been confirmed** to accept `role_id` / `admin_role_id` updates. Role changes are blocked until a verified role-update endpoint exists.
 
 ### DELETE `api/v1/admin/delete-admin/{id}`
 - **Used by:** Team page — remove member
@@ -196,6 +209,10 @@
 ### POST `api/v1/admin/toggle-admin-status/{id}`
 - **Body:** `{}`
 - **Used by:** Team page — toggle active/inactive
+
+### Role-update endpoint: NOT VERIFIED
+- **Status:** `POST api/v1/admin/update-admin-role/{id}` and all variations (`update-role`, `change-role`, `assign-role`, `admin/:id/role`, etc.) return 404 / "page not found" on both dev and prod.
+- **Action:** Do not use. The backend team must add a verified role-update endpoint before role changes can be persisted from the frontend.
 
 ## Analytics
 

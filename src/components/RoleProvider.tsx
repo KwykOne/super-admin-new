@@ -257,6 +257,11 @@ export function storeLoginIdentity(response: any, mobile: string): void {
   const source = response?.user ?? response?.admin ?? response?.data ?? response;
   const id = firstValue(source, ["id", "admin_id", "adminId", "user_id", "userId"]);
   const responseMobile = firstValue(source, ["mobile_no", "mobileNo", "mobile", "phone", "phone_no", "phoneNumber"]);
+  const name = firstValue(source, ["name", "admin_name", "adminName"]);
+  const roleValue = extractRoleValue(source);
+
   if (id !== undefined) setCurrentUserId(String(id));
   setCurrentUserMobile(normalizeDigits(responseMobile ?? mobile));
+  if (name) setCurrentUserName(String(name));
+  if (roleValue !== undefined) setCurrentRole(String(roleValue));
 }

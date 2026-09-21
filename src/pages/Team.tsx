@@ -143,48 +143,13 @@ export default function Team() {
 
   const handleUpdateRole = async (id: number, newRoleId: string) => {
     const loadId = toast.loading("Updating role...");
-    const body = { role_id: Number(newRoleId) };
     const headers = { Authorization: `Bearer ${token}` };
-    const attempts: { method: string; url: string }[] = [
-      { method: "POST", url: `api/v1/admin/update-admin-role/${id}` },
-      { method: "PUT", url: `api/v1/admin/update-admin-role/${id}` },
-      { method: "PATCH", url: `api/v1/admin/update-admin-role/${id}` },
-      { method: "POST", url: `api/v1/admin/toggle-admin-role/${id}` },
-      { method: "POST", url: `api/v1/admin/change-admin-role/${id}` },
-      { method: "POST", url: `api/v1/admin/update-role/${id}` },
-      { method: "PUT", url: `api/v1/admin/update-role/${id}` },
-      { method: "POST", url: `api/v1/admin/admin/${id}/role` },
-      { method: "PUT", url: `api/v1/admin/admin/${id}/role` },
-      { method: "PATCH", url: `api/v1/admin/admin/${id}/role` },
-      { method: "POST", url: `api/v1/admin/edit-admin-role/${id}` },
-      { method: "POST", url: `api/v1/admin/change-role/${id}` },
-      { method: "POST", url: `api/v1/admin/assign-role/${id}` },
-      { method: "PUT", url: `api/v1/admin/admin/${id}` },
-      { method: "PATCH", url: `api/v1/admin/admin/${id}` },
-      { method: "POST", url: `api/v1/admin/update-admin/${id}` },
-    ];
     try {
-      let response: any = null;
-      let lastError: any = null;
-      for (const attempt of attempts) {
-        try {
-          if (attempt.method === "POST") {
-            response = await axios.post(`${baseURL}${attempt.url}`, body, { headers });
-          } else if (attempt.method === "PUT") {
-            response = await axios.put(`${baseURL}${attempt.url}`, body, { headers });
-          } else {
-            response = await axios.patch(`${baseURL}${attempt.url}`, body, { headers });
-          }
-          break;
-        } catch (err: any) {
-          lastError = err;
-          if (err.response?.status !== 404) break;
-        }
-      }
-      if (!response) throw lastError;
-      if (response.status < 200 || response.status >= 300) {
-        throw new Error(`Role update returned status ${response.status}`);
-      }
+      await axios.patch(
+        `${baseURL}api/v1/admin/team/${id}`,
+        { role_id: Number(newRoleId) },
+        { headers },
+      );
       await refreshAdmins();
       toast.success("Role updated successfully");
     } catch (err: any) {
@@ -193,7 +158,11 @@ export default function Team() {
       const message = typeof data === "string" ? data : data?.message || data?.error || "";
       const detail = message ? `${message}` : `HTTP ${status}`;
       console.error("Error updating role:", { status, data, err });
-      toast.error(`Error updating role (${detail})`);
+      if (status === 404) {
+        toast.error("Role update is not available. The backend does not have a verified role-update endpoint. Contact the BharatGo backend team to add this API.");
+      } else {
+        toast.error(`Error updating role (${detail})`);
+      }
     } finally {
       toast.dismiss(loadId);
     }
