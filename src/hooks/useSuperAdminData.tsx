@@ -12,16 +12,19 @@ export default function useAdminData() {
     ? import.meta.env.VITE_BACKEND_DEV_URL
     : import.meta.env.VITE_BACKEND_PROD_URL;
 
-  const getAdmins = useCallback(async () => {
+  const getAdmins = useCallback(async (): Promise<any[] | null> => {
     try {
       const response = await axios.get(`${baseURL}api/v1/admin/get-superadmins`,{
         headers:{
             Authorization:`Bearer ${token}`
         }
       });
-      setAdmins(response.data.data);
+      const nextAdmins = Array.isArray(response.data?.data) ? response.data.data : [];
+      setAdmins(nextAdmins);
+      return nextAdmins;
     } catch (err) {
       console.error("Error fetching admins:", err);
+      return null;
     }
   }, [baseURL, token]);
 

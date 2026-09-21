@@ -31,7 +31,7 @@ import useAdminData from "@/hooks/useSuperAdminData";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
 import axios from "axios";
-import { canonicalizeRole, SUPER_ADMIN_API_ID, TEAM_API_ID } from "@/lib/roles";
+import { SUPER_ADMIN_API_ID, TEAM_API_ID } from "@/lib/roles";
 
 const roles = [
   { id: SUPER_ADMIN_API_ID, name: "Super Admin", description: "Full access to all areas" },
@@ -60,12 +60,24 @@ export default function Team() {
     setLoading(!admins || admins.length === 0 && loading);
   }, [admins]);
 
-  const filteredMembers = (admins || []).filter(member =>
-    member.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    member.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (member.role_master?.role_name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (member.admin_role_id != null && canonicalizeRole(member.admin_role_id)).toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const getMemberRoleName = (member: any): string => {
+    const roleName = member?.role_master?.role_name ?? member?.role_name;
+    return typeof roleName === "string" && roleName.trim() ? roleName : "Role unavailable";
+  };
+
+  const getMemberRoleId = (member: any): number | null => {
+    const roleId = member?.admin_role_id ?? member?.role_master?.admin_role_id ?? member?.role_master?.role_id ?? member?.role_id;
+    if (roleId === null || roleId === undefined || roleId === "") return null;
+    const numericRoleId = Number(roleId);
+    return Number.isFinite(numericRoleId) ? numericRoleId : null;
+  };
+
+  const filteredMembers = (admins || []).filter(member => {
+    const search = searchQuery.toLowerCase();
+    return member.name?.toLowerCase().includes(search) ||
+      member.email?.toLowerCase().includes(search) ||
+      getMemberRoleName(member).toLowerCase().includes(search);
+  });
 
   const handleAddMember = async () => {
     const loadId = toast.loading("Creating team member");
@@ -155,7 +167,19 @@ export default function Team() {
         },
         { headers },
       );
-      await refreshAdmins();
+      const refreshedAdmins = await refreshAdmins();
+      const updatedMember = refreshedAdmins?.find((member: any) => String(member.id) === String(id));
+      const updatedRoleName = updatedMember ? getMemberRoleName(updatedMember) : "Role unavailable";
+      const updatedRoleId = updatedMember ? getMemberRoleId(updatedMember) : null;
+      const roleWasApplied = updatedRoleId === roleIdNum ||
+        (roleIdNum === Number(SUPER_ADMIN_API_ID) && updatedRoleName === "Super Admin") ||
+        (roleIdNum === Number(TEAM_API_ID) && updatedRoleName === "Team");
+
+      if (!updatedMember || !roleWasApplied) {
+        toast.error(`The backend reported success, but the role is still ${updatedRoleName}. No role change was confirmed.`);
+        return;
+      }
+
       toast.success("Role updated successfully");
     } catch (err: any) {
       const status = err.response?.status ?? "network";
@@ -173,16 +197,8 @@ export default function Team() {
     }
   };
 
-  const getMemberRole = (member: any): string => {
-    const roleName = member?.role_master?.role_name;
-    if (roleName) return canonicalizeRole(roleName);
-    if (member?.admin_role_id != null) return canonicalizeRole(member.admin_role_id);
-    return canonicalizeRole(roleName);
-  };
-
   const getRoleIcon = (role: string) => {
-    const canonical = canonicalizeRole(role);
-    if (canonical === "Super Admin") return <ShieldAlert className="h-4 w-4 text-red-500" />;
+    if (role === "Super Admin") return <ShieldAlert className="h-4 w-4 text-red-500" />;
     return <UserCog className="h-4 w-4 text-blue-500" />;
   };
 
@@ -314,14 +330,14 @@ export default function Team() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {admins.length === 0 ? (
+                  {filteredMembers.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={6} className="text-center py-8 text-gray-500">
                         No team members found matching your search
                       </TableCell>
                     </TableRow>
                   ) : (
-                    admins.map((member) => (
+                    filteredMembers.map((member) => (
                       <TableRow key={member.id}>
                         <TableCell>
                           <div className="font-medium">{member.name || 'NA'}</div>
@@ -332,8 +348,8 @@ export default function Team() {
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1">
-                            {getRoleIcon(member.role_master?.role_name ?? String(member.admin_role_id ?? ""))}
-                            <span>{getMemberRole(member)}</span>
+                            {getRoleIcon(getMemberRoleName(member))}
+                            <span>{getMemberRoleName(member)}</span>
                           </div>
                         </TableCell>
                         <TableCell>
