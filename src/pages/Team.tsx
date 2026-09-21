@@ -63,7 +63,8 @@ export default function Team() {
   const filteredMembers = (admins || []).filter(member =>
     member.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     member.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    member.role_master?.role_name.toLowerCase().includes(searchQuery.toLowerCase())
+    (member.role_master?.role_name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (member.admin_role_id != null && canonicalizeRole(member.admin_role_id)).toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const handleAddMember = async () => {
@@ -144,10 +145,14 @@ export default function Team() {
   const handleUpdateRole = async (id: number, newRoleId: string) => {
     const loadId = toast.loading("Updating role...");
     const headers = { Authorization: `Bearer ${token}` };
+    const roleIdNum = Number(newRoleId);
     try {
       await axios.patch(
         `${baseURL}api/v1/admin/team/${id}`,
-        { role_id: Number(newRoleId) },
+        {
+          admin_role_id: roleIdNum,
+          role_id: roleIdNum,
+        },
         { headers },
       );
       await refreshAdmins();
@@ -166,6 +171,13 @@ export default function Team() {
     } finally {
       toast.dismiss(loadId);
     }
+  };
+
+  const getMemberRole = (member: any): string => {
+    const roleName = member?.role_master?.role_name;
+    if (roleName) return canonicalizeRole(roleName);
+    if (member?.admin_role_id != null) return canonicalizeRole(member.admin_role_id);
+    return canonicalizeRole(roleName);
   };
 
   const getRoleIcon = (role: string) => {
@@ -320,8 +332,8 @@ export default function Team() {
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1">
-                            {getRoleIcon(member.role_master?.role_name)}
-                            <span>{canonicalizeRole(member.role_master?.role_name)}</span>
+                            {getRoleIcon(member.role_master?.role_name ?? String(member.admin_role_id ?? ""))}
+                            <span>{getMemberRole(member)}</span>
                           </div>
                         </TableCell>
                         <TableCell>

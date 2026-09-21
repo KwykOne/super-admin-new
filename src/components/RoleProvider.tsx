@@ -72,7 +72,7 @@ function adminMobile(admin: any): string {
 
 function extractRoleValue(record: any, depth = 0): unknown {
   if (!record || depth > 2) return undefined;
-  const direct = firstValue(record, ["role_name", "roleName", "role_id", "roleId"]);
+  const direct = firstValue(record, ["admin_role_id", "adminRoleId", "role_name", "roleName", "role_id", "roleId"]);
   if (direct !== undefined) return direct;
   const nested = firstValue(record, ["role_master", "roleMaster", "role", "roles", "permission", "access"]);
   if (Array.isArray(nested)) {
